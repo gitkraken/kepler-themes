@@ -1,6 +1,6 @@
 # vendor
 
-`kepler-theme-check.mjs` is Kepler's own validator, bundled into one file. Kepler's repo is internal, so its release job commits the file here by pull request. Nobody edits it by hand.
+`kepler-theme-check.mjs` is Kepler's own validator, bundled into one file. Kepler's repo is internal, so the bundle is built there and committed here by pull request whenever Kepler's theme format or contrast rules change. Nobody edits it by hand. For now a Kepler maintainer opens those pull requests; Kepler's release job will open them once it can.
 
 `scripts/check.mjs` imports it when it exists. Until it does, schema and contrast checks are skipped with a warning locally and fail the check in CI (`CI` set), so CI can never skip them silently.
 
