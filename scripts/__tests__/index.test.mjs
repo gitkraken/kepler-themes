@@ -4,6 +4,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { buildIndex, serializeIndex } from '../build-index.mjs';
+import { renderLandingPage } from '../lib/landing-page.mjs';
 import { canonicalHash } from '../lib/canonical-hash.mjs';
 import { MAX_INDEX_BYTES, formatJson } from '../lib/gallery.mjs';
 import { makeGallery, validFamily } from './helpers.mjs';
@@ -122,4 +123,20 @@ test('the index build names an unreadable or malformed file instead of crashing'
   writeFileSync(join(list, 'tags.json'), formatJson(['x'.repeat(1_100_000)]));
   writeFileSync(join(list, 'withdrawn.json'), formatJson(['x'.repeat(1_100_000)]));
   await assert.rejects(buildIndex({ root: list, now: NOW }), /withdrawn\.json cannot be read: larger than 1 MB/);
+});
+
+test('the landing page lists each family and escapes what contributors wrote', async () => {
+  const hostile = validFamily({
+    name: '<script>alert(1)</script>',
+    author: 'A & B',
+    themes: [{ id: 'hostile-dark', name: '"Dark"', extends: 'dark' }],
+  });
+  const root = makeGallery({ example: {}, hostile: { family: hostile } });
+  const page = renderLandingPage(await buildIndex({ root, now: NOW }));
+  assert.match(page, /2 theme families/);
+  assert.ok(page.includes('&lt;script&gt;alert(1)&lt;/script&gt;'));
+  assert.ok(!page.includes('<script>'));
+  assert.ok(page.includes('by A &amp; B'));
+  assert.ok(page.includes('&quot;Dark&quot;'));
+  assert.ok(page.includes('href="https://github.com/gitkraken/kepler-themes/tree/main/themes/hostile"'));
 });

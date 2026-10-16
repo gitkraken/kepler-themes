@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalHash } from './lib/canonical-hash.mjs';
+import { renderLandingPage } from './lib/landing-page.mjs';
 import {
   formatProblems,
   indexLimitProblems,
@@ -151,6 +152,7 @@ if (import.meta.main) {
     const out = join(root, 'dist', 'v1', 'index.json');
     mkdirSync(dirname(out), { recursive: true });
     writeFileSync(out, text);
+    writeFileSync(join(root, 'dist', 'index.html'), renderLandingPage(index));
     console.log(`Wrote ${out} (${index.families.length} families, checked with ${index.checkedWith}).`);
   } catch (err) {
     console.error(err instanceof Error ? err.message : String(err));
