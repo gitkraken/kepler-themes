@@ -555,6 +555,12 @@ if (import.meta.main) {
     for (const path of fixFormatting(root)) console.log(`Reformatted ${path}`);
   }
   const base = args.base && refExists(root, args.base) ? args.base : null;
+  // Without a base the version and removal rules are skipped, so CI refuses to pass that way.
+  // GitHub names the commit before a branch's first push with zeros, which has nothing to compare.
+  if (base === null && process.env.CI && args.base && !/^0+$/.test(args.base)) {
+    console.error(`The base ${args.base} is not in the checkout, so the version and removal rules cannot run.`);
+    process.exit(1);
+  }
   const report = await runChecks({
     root,
     base,

@@ -31,17 +31,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: pr
+          # Full history brings every branch of this repo, so the version rule finds the base
+          # as origin/<base> with no fetch of its own (one would need credentials).
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-      # The version rule compares with the base branch, so fetch it into the PR checkout.
-      - name: Fetch the base branch into the pull request checkout
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          BASE_REPO: ${{ github.event.pull_request.base.repo.clone_url }}
-        run: git -C pr fetch --no-tags "$BASE_REPO" "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
       - name: Check themes
         env:
           BASE_REF: ${{ github.base_ref }}
@@ -78,11 +74,6 @@ jobs:
         with:
           node-version: 24
       - run: node --test "scripts/__tests__/*.test.mjs"
-      - name: Fetch the base branch
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          BASE_REPO: ${{ github.event.pull_request.base.repo.clone_url }}
-        run: git fetch --no-tags "$BASE_REPO" "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
       - name: Check themes with this pull request's tooling
         env:
           BASE_REF: ${{ github.base_ref }}
