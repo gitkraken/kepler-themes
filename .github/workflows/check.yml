@@ -1,0 +1,90 @@
+name: check
+
+# Why there are two checkouts: the gate judges a pull request with the tooling from the base
+# branch (`trusted/`) and reads the pull request's checkout (`pr/`) as data only: JSON files and
+# read-only git commands. A PR that edits scripts/, vendor/ or package.json therefore cannot
+# change how it is judged.
+#
+# That does not cover this directory. On `pull_request`, GitHub runs the workflow file from the
+# pull request itself, so a PR that changes anything under .github/ can change its own check and
+# its report. Treat the status and report of any PR that touches .github/ as untrusted and
+# review it as code (MAINTAINING.md).
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  # This job is the gate. Require the status "check" on main (MAINTAINING.md).
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trusted tooling from the base branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
+          ref: ${{ github.base_ref }}
+          path: trusted
+          persist-credentials: false
+      - name: Pull request, as data only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: pr
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      # The version rule compares with the base branch, so fetch it into the PR checkout.
+      - name: Fetch the base branch into the pull request checkout
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BASE_REPO: ${{ github.event.pull_request.base.repo.clone_url }}
+        run: git -C pr fetch --no-tags "$BASE_REPO" "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+      - name: Check themes
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: node trusted/scripts/check.mjs --root pr --base "origin/$BASE_REF" --author "$PR_AUTHOR"
+      - name: Collect the report
+        if: always()
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p report
+          cp check-report.md report/check-report.md || echo "The check did not produce a report." > report/check-report.md
+          echo "$PR_NUMBER" > report/pr-number
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: check-report
+          path: report/
+
+  # Not the gate. This runs the pull request's own tests of the tooling, and then its own check
+  # over its own tree, which is code the PR supplies, so it is only safe because the token is
+  # read-only and it holds no secrets. A PR can make these pass; the `check` job above is what
+  # protects main. It is the one job that shows what changed tooling does to every family.
+  tooling-tests:
+    name: tooling tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: node --test "scripts/__tests__/*.test.mjs"
+      - name: Fetch the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BASE_REPO: ${{ github.event.pull_request.base.repo.clone_url }}
+        run: git fetch --no-tags "$BASE_REPO" "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+      - name: Check themes with this pull request's tooling
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          CI: "1"
+        run: node scripts/check.mjs --base "origin/$BASE_REF"

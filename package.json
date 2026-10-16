@@ -1,0 +1,17 @@
+{
+  "name": "kepler-themes",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The community theme gallery for Kepler.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24.2"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "fix": "node scripts/check.mjs --fix",
+    "build": "node scripts/build-index.mjs",
+    "test": "node --test \"scripts/__tests__/*.test.mjs\""
+  }
+}
