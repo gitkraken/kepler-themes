@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { canonicalHash } from './lib/canonical-hash.mjs';
@@ -144,16 +144,57 @@ export async function buildIndex({ root, now = new Date() }) {
   };
 }
 
+// What the page links to or loads from `site/`; nothing else is requested from any other host.
+const SITE_FILES = ['site.css', 'site.js'];
+
+/**
+ * Each theme's preview colors from Kepler's validator, by family slug and theme id. The index the
+ * Kepler app reads never carries them, and an older validator that reports none yields none; the
+ * page then lists those themes unpainted.
+ */
+export async function collectPreviews({ families, vendor }) {
+  const previews = {};
+  if (typeof vendor?.checkThemeFamily !== 'function') return previews;
+  for (const f of families) {
+    if (typeof f.family.text !== 'string') continue;
+    let result;
+    try {
+      result = await vendor.checkThemeFamily(f.family.text);
+    } catch {
+      continue;
+    }
+    const themes = Array.isArray(result?.themes) ? result.themes : [];
+    for (const theme of themes) {
+      if (isRecord(theme) && typeof theme.id === 'string' && isRecord(theme.preview)) {
+        (previews[f.slug] ??= {})[theme.id] = theme.preview;
+      }
+    }
+  }
+  return previews;
+}
+
+/** Writes the index, the landing page and the static files the page uses under `outDir`. */
+export async function buildSite({ root, outDir = join(root, 'dist'), siteDir = join(root, 'site'), now = new Date() }) {
+  const index = await buildIndex({ root, now });
+  const text = serializeIndex(index);
+  // A clean output, so a file the page no longer uses is never published.
+  rmSync(outDir, { recursive: true, force: true });
+  const previews = await collectPreviews({ families: loadGallery(root).families, vendor: await loadVendor(root) });
+  const indexPath = join(outDir, 'v1', 'index.json');
+  mkdirSync(dirname(indexPath), { recursive: true });
+  writeFileSync(indexPath, text);
+  writeFileSync(join(outDir, 'index.html'), renderLandingPage(index, previews));
+  for (const name of SITE_FILES) cpSync(join(siteDir, name), join(outDir, name));
+  cpSync(join(siteDir, 'fonts'), join(outDir, 'fonts'), { recursive: true });
+  cpSync(join(siteDir, 'brand'), join(outDir, 'brand'), { recursive: true });
+  return { index, indexPath };
+}
+
 if (import.meta.main) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
   try {
-    const index = await buildIndex({ root });
-    const text = serializeIndex(index);
-    const out = join(root, 'dist', 'v1', 'index.json');
-    mkdirSync(dirname(out), { recursive: true });
-    writeFileSync(out, text);
-    writeFileSync(join(root, 'dist', 'index.html'), renderLandingPage(index));
-    console.log(`Wrote ${out} (${index.families.length} families, checked with ${index.checkedWith}).`);
+    const { index, indexPath } = await buildSite({ root });
+    console.log(`Wrote ${indexPath} (${index.families.length} families, checked with ${index.checkedWith}).`);
   } catch (err) {
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
