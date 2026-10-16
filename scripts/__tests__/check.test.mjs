@@ -343,6 +343,30 @@ test('--root checks a gallery in another directory from another cwd, using this 
   assert.ok(out.includes('scripts/check.mjs'));
 });
 
+test('in CI a base missing from the checkout fails instead of skipping the version rule', () => {
+  const script = fileURLToPath(new URL('../check.mjs', import.meta.url));
+  const gallery = makeGallery({ example: {} });
+  execFileSync('git', ['-C', gallery, 'init', '-q', '-b', 'main'], { stdio: 'ignore' });
+  const cwd = mkdtempSync(join(tmpdir(), 'kepler-themes-cwd-'));
+  const run = (base) => {
+    try {
+      execFileSync(process.execPath, [script, '--root', gallery, '--base', base], {
+        cwd,
+        stdio: 'pipe',
+        env: { ...process.env, CI: '1' },
+      });
+      return { code: 0, err: '' };
+    } catch (err) {
+      return { code: err.status, err: String(err.stderr) };
+    }
+  };
+  const missing = run('origin/main');
+  assert.equal(missing.code, 1);
+  assert.match(missing.err, /origin\/main is not in the checkout/);
+  // A branch's first push names the commit before it with zeros; there is nothing to compare.
+  assert.equal(run('0'.repeat(40)).code, 0);
+});
+
 test('--author and the base listing drive the removal rule and the maintainer note from git', () => {
   const script = fileURLToPath(new URL('../check.mjs', import.meta.url));
   const git = (cwd, ...args) =>
