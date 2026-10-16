@@ -1,8 +1,8 @@
 /*!
  * Kepler theme check 0.13.0
  *
- * Generated from Kepler 0.13.0. Do not edit by hand: it is rebuilt by
- * Kepler's release and committed here by pull request.
+ * Generated from Kepler 0.13.0. Do not edit by hand: it is rebuilt from
+ * Kepler and committed here by pull request.
  *
  * MIT License
  *
@@ -6037,6 +6037,56 @@ function parseThemeFamily(json) {
 }
 
 //#endregion
+//#region src/shared/theme/terminal-ansi.ts
+/**
+* The 16 slots Kepler's terminal draws when a theme names none, in ANSI order.
+* Light has its own set; Midnight and Dark share one.
+*
+* They are deliberately NOT design tokens. They are a terminal protocol: a
+* program emitting "bright yellow" is naming a slot, not asking for the app's
+* warning color, and remapping them onto the status ramp would corrupt the
+* output of every tool that draws with them.
+*/
+const BUILT_IN_TERMINAL_ANSI = {
+	dark: [
+		"#000000",
+		"#cd3131",
+		"#0dbc79",
+		"#e5e510",
+		"#2472c8",
+		"#bc3fbc",
+		"#11a8cd",
+		"#e5e5e5",
+		"#666666",
+		"#f14c4c",
+		"#23d18b",
+		"#f5f543",
+		"#3b8eea",
+		"#d670d6",
+		"#29b8db",
+		"#ffffff"
+	],
+	light: [
+		"#000000",
+		"#cd3131",
+		"#107c10",
+		"#949800",
+		"#0451a5",
+		"#bc05bc",
+		"#0598bc",
+		"#555555",
+		"#666666",
+		"#cd3131",
+		"#14ce14",
+		"#b5ba00",
+		"#0451a5",
+		"#bc05bc",
+		"#0598bc",
+		"#a5a5a5"
+	]
+};
+
+//#endregion
 //#region src/shared/theme/validation.ts
 /** The owner of an id taken by a theme that ships with Kepler. */
 const BUILT_IN_THEME_OWNER = "built-in";
@@ -6207,6 +6257,13 @@ function contrast(a, b) {
 	const lb = relativeLuminance(b);
 	return (Math.max(la, lb) + .05) / (Math.min(la, lb) + .05);
 }
+function hex([r, g, b]) {
+	return "#" + [
+		r,
+		g,
+		b
+	].map((c) => c.toString(16).padStart(2, "0")).join("");
+}
 /**
 * Pull one theme's `--token: value;` declarations out of a selector block in
 * `index.css`. Reads the real shipped file's text rather than a copy, which is
@@ -6342,7 +6399,7 @@ function builtInPalettes(css) {
 	};
 	return palettes;
 }
-function readable(tokens, value) {
+function readable$1(tokens, value) {
 	try {
 		resolveToken(tokens, value);
 		return true;
@@ -6366,7 +6423,7 @@ function dataThemes(families, palettes, keplerSyntax, onInvalid = () => {}) {
 				continue;
 			}
 			tokens[`--${name}`] = `var(--${source}) / ${value}`;
-		} else if (readable(tokens, value)) tokens[`--${name}`] = value;
+		} else if (readable$1(tokens, value)) tokens[`--${name}`] = value;
 		else onInvalid(`${def.id}: ${name} has a value that is not a color`);
 		const polarity = def.extends === "light" ? "light" : "dark";
 		themes.push({
@@ -6643,6 +6700,638 @@ function checkSyntax(theme, t, tokenColors, surfaces, check, name = "syntax") {
 		const ratio = Math.min(...plates.map((p) => contrast(composite(c.rgb, p.rgb, c.alpha), p.rgb)));
 		check(theme, `${name} ${value} on code plates`, ratio, TEXT_MIN);
 	}
+}
+
+//#endregion
+//#region src/backend/themes/theme-preview.ts
+const SYNTAX_SCOPES = {
+	text: "source",
+	keyword: "storage",
+	control: "keyword.control",
+	function: "entity.name.function",
+	type: "entity.name.type",
+	string: "string",
+	number: "constant.numeric",
+	variable: "variable",
+	comment: "comment"
+};
+/** The theme in the form the contrast checks read: canonical colors, hex terminal and syntax. */
+function contrastDefinition(theme) {
+	return {
+		id: theme.id,
+		extends: theme.base,
+		colors: theme.vars,
+		...theme.terminal && { terminal: theme.terminal },
+		...theme.syntax && { syntax: theme.syntax }
+	};
+}
+/** The color the last rule naming exactly `scope` gives it, as a later rule wins in TextMate. */
+function foregroundFor(rules, scope) {
+	return rules?.filter((rule) => (typeof rule.scope === "string" ? [rule.scope] : rule.scope).includes(scope)).map((rule) => rule.settings.foreground).findLast((foreground) => foreground !== void 0);
+}
+/** `value` at its alpha over an opaque `under`, as an opaque `#rrggbb`. Throws on a value that is not a color. */
+function flatten(tokens, value, under) {
+	const { rgb, alpha } = resolveToken(tokens, value);
+	return hex(composite(rgb, under, alpha));
+}
+function channels(color) {
+	const { rgb } = resolveToken({}, color);
+	return rgb;
+}
+function readable(tokens, value, under) {
+	if (value === void 0) return void 0;
+	try {
+		return flatten(tokens, value, under);
+	} catch {
+		return;
+	}
+}
+/**
+* Derives a theme's preview from the same resolved tokens the contrast checks
+* measure, so a page paints what Kepler paints. Never throws: a theme whose
+* colors cannot be resolved has no preview.
+*/
+function deriveThemePreview(theme, palettes, keplerSyntax) {
+	try {
+		const [entry] = dataThemes([{ themes: [contrastDefinition(theme)] }], palettes, keplerSyntax);
+		if (!entry) return void 0;
+		const { tokens } = entry;
+		const token = (name) => {
+			const value = tokens[`--${name}`];
+			if (value === void 0) throw new Error(`missing token: ${name}`);
+			return value;
+		};
+		const canvasRgb = resolveToken(tokens, token("surface-canvas")).rgb;
+		const canvas = hex(canvasRgb);
+		const over = (name, under = canvasRgb) => flatten(tokens, token(name), under);
+		const raised = over("surface-raised");
+		const fill = over("brand-fill");
+		const sunken = over("surface-sunken");
+		const text = over("content");
+		const terminalBackground = readable(tokens, theme.terminal?.background, canvasRgb) ?? sunken;
+		const terminalRgb = channels(terminalBackground);
+		const ansi = (theme.terminal?.ansi ?? BUILT_IN_TERMINAL_ANSI[theme.polarity]).map((color) => flatten(tokens, color, terminalRgb));
+		if (ansi.length !== 16) return void 0;
+		const own = theme.syntax?.tokenColors;
+		const kepler = keplerSyntax[theme.polarity].tokenColors;
+		const raisedRgb = channels(raised);
+		const syntaxColor = (scope) => readable(tokens, foregroundFor(own, scope), raisedRgb) ?? readable(tokens, foregroundFor(kepler, scope), raisedRgb);
+		const syntaxText = syntaxColor(SYNTAX_SCOPES.text) ?? text;
+		const scoped = (scope) => syntaxColor(scope) ?? syntaxText;
+		const syntax = {
+			text: syntaxText,
+			keyword: scoped(SYNTAX_SCOPES.keyword),
+			control: scoped(SYNTAX_SCOPES.control),
+			function: scoped(SYNTAX_SCOPES.function),
+			type: scoped(SYNTAX_SCOPES.type),
+			string: scoped(SYNTAX_SCOPES.string),
+			number: scoped(SYNTAX_SCOPES.number),
+			variable: scoped(SYNTAX_SCOPES.variable),
+			comment: scoped(SYNTAX_SCOPES.comment)
+		};
+		return {
+			polarity: theme.polarity,
+			colors: {
+				canvas,
+				sunken,
+				raised,
+				ink: over("ink"),
+				text,
+				muted: over("content-muted"),
+				edge: over("edge"),
+				selected: over("selected-bg"),
+				selectedInk: over("selected-ink"),
+				brand: over("brand"),
+				fill,
+				onFill: over("content-on-brand", channels(fill))
+			},
+			terminal: {
+				background: terminalBackground,
+				foreground: readable(tokens, theme.terminal?.foreground, terminalRgb) ?? flatten(tokens, token("content"), terminalRgb),
+				ansi
+			},
+			syntax
+		};
+	} catch {
+		return;
+	}
+}
+
+//#endregion
+//#region \0kepler:palette-css
+var _kepler_palette_css_default = "\n:root {\n  /* Neutral surfaces — monotonically lighter as elevation rises. */\n  --surface-sunken: 0.145 0.006 264; /* wells, inputs, code blocks   #090a0d */\n  --surface-canvas: 0.17 0.006 264; /* app background                #0e0f12 */\n  --surface-raised: 0.198 0.007 264; /* panels, cards, list surfaces #141619 */\n  --surface-overlay: 0.228 0.008 264; /* menus, popovers             #1b1c20 */\n\n  /* Ink — one color, four alpha steps. Worst-case ratios against the LIGHTEST\n     surface (overlay): strong 15.3 · content 11.4 · muted 7.2 · subtle 4.8. */\n  --ink: 0.965 0.004 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.85;\n  --content-muted: var(--ink) / 0.65;\n  --content-subtle: var(--ink) / 0.5;\n  --content-on-accent: var(--surface-sunken);\n\n  /* Fills — ink at low alpha, so they tint whatever they sit on. */\n  --fill-subtle: var(--ink) / 0.04;\n  --fill-muted: var(--ink) / 0.07;\n  --fill-strong: var(--ink) / 0.11;\n\n  /* Edges — `edge-strong` is the 3:1 control boundary (measured 3.00). */\n  --edge-subtle: var(--ink) / 0.08;\n  --edge: var(--ink) / 0.14;\n  --edge-strong: var(--ink) / 0.35;\n  /* Decorative line, between `edge` and `edge-strong`: visible on the canvas\n     without borrowing the control boundary's contrast contract. */\n  --edge-decor: var(--ink) / 0.22;\n\n  /* A sash's own element thickness and its (larger) grab/hover zone. The\n     hit-zone value is shared with the `Sash` primitive's panel-library\n     configuration — see the RESIZE HANDLES block below for why the two\n     must agree. */\n  --dock-tab-drop-line-size: 3px;\n  --sash-size: 5px;\n  --sash-hit: 12px;\n  /* How long the pointer rests on a sash before it lights up. A sash sits\n     between two surfaces the pointer crosses constantly, and lighting up on\n     every pass reads as flicker; the delay is what makes the highlight mean\n     \"you could drag this\". */\n  --sash-hover-delay: 250ms;\n\n  /* Brand teal. Lighter than the previous #1f8f7c and paired with near-black\n     ink rather than white: white on the old teal measured 4.02:1, under the\n     AA floor, and no single teal can satisfy both \"readable as text on the\n     canvas\" (wants lighter) and \"readable under white ink\" (wants darker).\n     Dark ink resolves the conflict with one color instead of two.\n     ink-on-brand 6.68 · brand-on-canvas 6.47 · on its badge tint 4.59 */\n  --brand: 0.66 0.099 178.8; /*                                     #3fa693 */\n  --brand-hover: 0.71 0.106 178.8;\n  --brand-active: 0.61 0.092 178.8;\n  /* Solid brand surfaces and the ink on them. Raw aliases resolved at the point\n     of use, so Dark and Light follow their own `--brand`/`--content-on-accent`;\n     a custom theme overrides them when its text-safe brand cannot carry text. */\n  --brand-fill: var(--brand);\n  --brand-fill-hover: var(--brand-hover);\n  --brand-fill-active: var(--brand-active);\n  --content-on-brand: var(--content-on-accent);\n\n  /* AI purple. Higher chroma than the status ramp, and 15° off status-merged,\n     so the system's only two purples stay separable.\n     ai-on-canvas 6.11 · ink-on-ai 7.11 */\n  --ai: 0.7 0.185 285; /*                                           #968dfe */\n  --ai-hover: 0.75 0.175 285;\n\n  /* Selection & focus — brand-tinted. The ink is text on the wash: a step\n     lighter than brand, because a segmented control lays the wash over its own\n     track, and brand there falls under 4.5:1 over an overlay.\n     on the wash, worst over the track 4.67 */\n  --selected-bg: var(--brand) / 0.14;\n  --selected-border: var(--brand) / 0.45;\n  --selected-ink: 0.69 0.099 178.8; /*                              #4aaf9c */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Status ramp — identical L and C, hue only. Worst ratio in the set: 6.39. */\n  --status-success: 0.72 0.155 150; /* running, open, passing       #4fbf6e */\n  --status-info: 0.72 0.155 230; /* building, in progress, info   #04b4ec */\n  --status-warning: 0.72 0.155 82; /* review, spawning, degraded    #d29a08 */\n  --status-attention: 0.72 0.155 50; /* BLOCKED ON YOU              #f08440 */\n  --status-danger: 0.72 0.155 22; /* errored, closed, failed        #f67878 */\n  --status-merged: 0.72 0.155 300; /* merged PR, finished issue, done task #b48cf6 */\n  --status-dormant: 0.58 0.01 264; /* disconnected-session ring — see @theme */\n\n  /* Host identity — six hues spread around the wheel at ~0.125-0.165 chroma\n     (raised from a muted 0.09 that read as six near-identical pastels), each\n     placed and measured to clear an OKLab distance from brand/ai/every status\n     hue (checked by a dedicated test) rather than eyeballed. Amber sits in\n     the narrow gap between status-attention and status-warning, and violet in\n     the narrow gap between ai and status-merged; both borrow extra separation\n     from lightness (off the shared 0.72) where hue alone can't clear the\n     floor, which is also what keeps all six apart under red-green color\n     vision deficiency. Dark inherits these unchanged (same reasoning as the\n     status ramp): both dark themes solve the same contrast problem at the\n     same amplitude, so a second set of numbers here would only be Midnight's\n     copied by hand. */\n  --host-rose: 0.72 0.16 355; /*                                       #f075aa */\n  --host-amber: 0.78 0.125 66; /*                                      #eda65a */\n  --host-lime: 0.72 0.155 118; /*                                      #9db128 */\n  --host-cyan: 0.72 0.155 204; /*                                      #0fbac7 */\n  --host-blue: 0.72 0.155 258; /*                                      #69a5fe */\n  --host-violet: 0.75 0.165 328; /*                                    #e585e2 */\n\n  /* Agent account identity, in two sets of the same six hues. The bold\n     `--account-*` set tints a ~14px glyph and the picker swatch: it needs\n     enough chroma to read against muted-gray neighbours and only 3:1 as a\n     non-text mark. The `--account-ink-*` set colors the small account name and\n     address in the session hover card, which needs 4.5:1 on every surface,\n     the overlay included; in light that forces a darker ink, so the two sets\n     diverge there and are identical here.\n     Chroma is pushed to what sRGB holds at each lightness (hues differ, so\n     cyan stays quieter than violet) and hues are moved off the status ramp,\n     brand and ai (rose leans pink, away from danger) because an account\n     color must never read as state. Dark inherits both sets unchanged. */\n  --account-rose: 0.72 0.2 352;\n  --account-amber: 0.8 0.16 72;\n  --account-lime: 0.8 0.19 125;\n  --account-cyan: 0.78 0.125 210;\n  --account-blue: 0.67 0.175 258;\n  --account-violet: 0.7 0.23 320;\n  --account-ink-rose: 0.72 0.2 352;\n  --account-ink-amber: 0.8 0.16 72;\n  --account-ink-lime: 0.8 0.19 125;\n  --account-ink-cyan: 0.78 0.125 210;\n  --account-ink-blue: 0.67 0.175 258;\n  --account-ink-violet: 0.7 0.23 320;\n\n  /* Channel badge/mark — mirrors the channel icon tints (shared table in\n     scripts/_channel-tints.mjs): staging blue, dev purple, source rust.\n     The ink is the icon's PILL color, its brightest element, which is what a\n     small dark-surface badge wants; the mark trio recolors the title-bar\n     mark's own gradient stops (both its highlights to `-mark-hi`, both its\n     deep stops to `-mark-deep`) and is repeated verbatim in light below,\n     since it is brand artwork rather than a themed surface. */\n  --channel-staging: 0.674 0.172 264; /* pill  #5F91FF */\n  --channel-staging-mark-hi: 0.958 0.021 246; /* #E6F3FF */\n  --channel-staging-mark-mid: 0.66 0.17 265; /* #5E8CF9 */\n  --channel-staging-mark-deep: 0.561 0.15 265; /* #486FCC */\n  --channel-dev: 0.728 0.168 301; /* pill  #B98BFF */\n  --channel-dev-mark-hi: 0.961 0.024 309; /* #F7EEFF */\n  --channel-dev-mark-mid: 0.66 0.169 300; /* #A376E9 */\n  --channel-dev-mark-deep: 0.56 0.15 300; /* #835CBE */\n  --channel-source: 0.779 0.127 63; /* pill  #F0A45A */\n  --channel-source-mark-hi: 0.955 0.032 69; /* #FFEDDA */\n  --channel-source-mark-mid: 0.66 0.167 53; /* #DE6F00 */\n  --channel-source-mark-deep: 0.56 0.145 52; /* #B45600 */\n\n  /* Modal scrim — darkens toward the canvas hue rather than to neutral black,\n     so a dialog's backdrop stays part of the same world. */\n  --scrim: 0.08 0.008 264 / 0.72;\n\n  /* Diff washes — low-alpha line backgrounds, hue-matched to the status ramp. */\n  --diff-added: 0.72 0.155 150 / 0.14;\n  --diff-removed: 0.72 0.155 22 / 0.14;\n\n  /* Code-view highlights — opaque so the measured contrast is the real one. Teal\n     for selection (the brand hue), amber for find, orange for the current match;\n     the ink is white because the highlights are mid-tone and light grey ink\n     cannot be 4.5:1 on a background that is also 3:1 from the plate. */\n  --code-selection: 0.525 0.09 178.8;\n  --code-find: 0.535 0.12 95;\n  --code-find-current: 0.55 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Commit-graph lanes — 8 hues, 45° apart, one L and C. */\n  --lane-1: 0.74 0.15 150;\n  --lane-2: 0.74 0.15 195;\n  --lane-3: 0.74 0.15 240;\n  --lane-4: 0.74 0.15 285;\n  --lane-5: 0.74 0.15 330;\n  --lane-6: 0.74 0.15 15;\n  --lane-7: 0.74 0.15 60;\n  --lane-8: 0.74 0.15 105;\n\n  /* Providers — external brand colors, lifted to readable lightness on the\n     dark themes. */\n  --provider-github: 0.857 0.014 248;\n  --provider-gitlab: 0.753 0.145 37;\n  --provider-jira: 0.73 0.116 258;\n  --provider-linear: 0.772 0.115 294;\n\n  /* Usage gauge — consumed is the BRIGHTER of the pair on the dark themes. */\n  --usage-track: 0.464 0.019 264;\n  --usage-consumed: 0.825 0.126 180;\n  /* Track for bars filled with a status tone. The neutral track is too light for\n     a status fill to clear 3:1 against it on the dark themes, so this one is\n     darker; Dark inherits it, and it clears 3:1 for all three tones on both. */\n  --usage-track-toned: 0.42 0.019 264;\n\n  /* Type stacks. The system stack is the right voice for a desktop tool: it is\n     the reader's own UI face, it needs no network, and it renders at the\n     platform's own hinting. */\n  --sans-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  --mono-font: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;\n\n  /* Elevation — the dark themes lift by lightness, so shadows only anchor true\n     overlays. */\n  --elevation-raised: 0 0 #0000;\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.7), 0 2px 6px -2px oklch(0 0 0 / 0.5);\n\n  /* The selected segment's fill. A separate token from the overlay surface so\n     a theme can lift its controls without also lifting every menu and popover;\n     by default it is the overlay, resolved where it is used, so Dark, Light and\n     every data theme inherit their own overlay. */\n  --control-thumb: var(--surface-overlay);\n\n  /* Control track and thumb (segmented control). The track is a well: an inset\n     shadow on the sunken surface. The thumb is raised by a 1px top highlight,\n     a drop shadow and a hairline of black that keeps its edge on the track.\n     Dark inherits these, and so does every data theme by its base's polarity. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.45);\n  --control-thumb-shadow:\n    inset 0 1px 0 oklch(var(--ink) / 0.1), 0 1px 2px oklch(0 0 0 / 0.55),\n    0 0 0 1px oklch(0 0 0 / 0.35);\n\n  color-scheme: dark;\n}\n\n:root.dark {\n  /* Midnight's ramp lifted bodily — same hue, same chroma, same step sizes. */\n  --surface-sunken: 0.205 0.006 264; /* wells, inputs, code blocks   #16171a */\n  --surface-canvas: 0.232 0.006 264; /* app background               #1c1d20 */\n  --surface-raised: 0.262 0.007 264; /* panels, cards, list surfaces #232528 */\n  --surface-overlay: 0.295 0.008 264; /* menus, popovers             #2a2d31 */\n\n  /* Ink drops with the surfaces rather than holding at Midnight's near-white, which\n     is what keeps this a softer theme instead of merely a greyer one. Worst-case\n     ratios against the LIGHTEST surface (overlay): strong 10.9 · content 8.6 ·\n     muted 6.3 · subtle 4.7. `--content-strong` and `--content-on-accent` are\n     inherited: both are written against tokens this block overrides. */\n  --ink: 0.92 0.004 264;\n  --content: var(--ink) / 0.87;\n  --content-muted: var(--ink) / 0.71;\n  --content-subtle: var(--ink) / 0.58;\n\n  /* Fills — alphas raised to hold Midnight's composited lightness delta (0.039 /\n     0.065 / 0.101), not Midnight's alphas, which would read thinner up here. */\n  --fill-subtle: var(--ink) / 0.05;\n  --fill-muted: var(--ink) / 0.085;\n  --fill-strong: var(--ink) / 0.13;\n\n  /* Edges — same treatment. `edge-strong` keeps the 3:1 control boundary\n     (measured 3.24) and is the one value here tuned to a ratio rather than to\n     Midnight's appearance. */\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.17;\n  --edge-strong: var(--ink) / 0.41;\n  --edge-decor: var(--ink) / 0.26;\n\n  /* Brand teal, lifted above Midnight's #3fa693, which would sit too close to\n     these lighter surfaces and to its own badge tint over them. Same hue and\n     the same near-black ink on top, so the action color is recognisably the\n     product's. brand-on-canvas 7.36 · ink-on-brand 7.83 · on its badge tint 4.58 */\n  --brand: 0.73 0.106 178.8; /*                                      #4ebda9 */\n  --brand-hover: 0.78 0.112 178.8;\n  --brand-active: 0.68 0.1 178.8;\n\n  /* AI purple, lifted so it still reads as text on its own badge tint over\n     these surfaces. ai-on-canvas 7.34 · ink-on-ai 7.81 · on its badge tint 4.57 */\n  --ai: 0.75 0.185 285; /*                                           #a6a1fe */\n  --ai-hover: 0.8 0.175 285;\n\n  /* Selection reads off a lighter brand, so the tint needs a touch more of it\n     to separate from a lighter row underneath. */\n  --selected-bg: var(--brand) / 0.16;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.60 */\n  --selected-ink: 0.77 0.106 178.8; /*                              #5ccab5 */\n\n  /* The six status hues are Midnight's, unchanged (AI purple is lifted above):\n     all of them still clear their floors here (worst in the status set 5.19), and a\n     second ramp at a second lightness is exactly the duplication the system\n     exists to remove. The dormant ring is the one exception — it is tuned\n     AGAINST its surface by construction, so it has to move with it (3.94, beside\n     Midnight's 3.96). */\n  --status-dormant: 0.63 0.01 264;\n\n  /* Scrim lightens with the canvas it dims. Still a darkening wash — a scrim\n     that merely greys the page cannot push it back. */\n  --scrim: 0.12 0.008 264 / 0.7;\n\n  /* Diff washes — same hues, a little more of them, since a 14% tint over a\n     lighter line is a fainter stripe. */\n  --diff-added: 0.72 0.155 150 / 0.15;\n  --diff-removed: 0.72 0.155 22 / 0.15;\n\n  /* Code-view highlights — the plate is lighter here, so the highlights rise with\n     it and the window that satisfies both 3:1 from the plate and 4.5:1 under\n     white ink narrows to about 0.015 of lightness. */\n  --code-selection: 0.545 0.09 178.8;\n  --code-find: 0.555 0.12 95;\n  --code-find-current: 0.57 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Usage gauge — the track is an opaque grey read against the panel it sits\n     on, so it rises with the panel; consumed is Midnight's and still clears the\n     3:1 the pair owes each other. */\n  --usage-track: 0.5 0.019 264;\n\n  /* Overlay shadow, softened. Elevation is lightness here as on Midnight, so the\n     shadow only anchors true overlays — and Midnight's 0.7 black, dropped on a\n     canvas this much lighter, reads as a hole cut in the page rather than as a\n     lift. `--elevation-raised` stays the inherited no-op. */\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.5), 0 2px 6px -2px oklch(0 0 0 / 0.34);\n\n  color-scheme: dark;\n}\n\n:root.light {\n  --surface-sunken: 0.93 0.006 264; /*                              #e6e8ec */\n  --surface-canvas: 0.958 0.004 264; /*                             #f0f1f4 */\n  --surface-raised: 0.988 0.003 264; /*                             #fafbfd */\n  --surface-overlay: 0.997 0.002 264; /*                            #fefefe */\n\n  /* Worst-case ratios against the DARKEST surface (sunken):\n     strong 14.6 · content 11.4 · muted 7.1 · subtle 4.7. */\n  --ink: 0.205 0.014 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.9;\n  --content-muted: var(--ink) / 0.75;\n  --content-subtle: var(--ink) / 0.62;\n  --content-on-accent: 0.999 0 0;\n\n  --fill-subtle: var(--ink) / 0.045;\n  --fill-muted: var(--ink) / 0.08;\n  --fill-strong: var(--ink) / 0.12;\n\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.16;\n  --edge-strong: var(--ink) / 0.47; /* 3:1 control boundary (measured 3.02) */\n  --edge-decor: var(--ink) / 0.28;\n\n  /* Brand teal, deeper here so it carries white ink and still reads as text.\n     ink-on-brand 7.10 · brand-on-canvas 6.29 · on its badge tint 4.64 */\n  --brand: 0.45 0.098 178.2; /*                                     #026455 */\n  --brand-hover: 0.4 0.09 178.2;\n  --brand-active: 0.36 0.082 178.2;\n\n  --ai: 0.47 0.195 285; /*                                          #563dc1 */\n  --ai-hover: 0.42 0.185 285;\n\n  --selected-bg: var(--brand) / 0.12;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.68 */\n  --selected-ink: 0.44 0.098 178.2; /*                              #036153 */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Same hues as dark at a lightness that clears AA on light surfaces.\n     Worst ratio in the set: 5.02. */\n  --status-success: 0.48 0.15 150; /*                               #007132 */\n  --status-info: 0.48 0.15 230; /*                                  #066788 */\n  --status-warning: 0.48 0.15 82; /*                                #795702 */\n  --status-attention: 0.48 0.15 50; /*                              #934302 */\n  --status-danger: 0.48 0.15 22; /*                                 #a12f35 */\n  --status-merged: 0.48 0.15 300; /*                                #6c44a4 */\n  --status-dormant: 0.54 0.015 264; /* darker than Midnight's — see @theme */\n\n  /* Host identity — same hues and chroma as Midnight, at a lower,\n     independently-tuned lightness, same reasoning as the rest of this\n     theme's restated blocks: light solves a different contrast problem, so\n     it gets its own numbers rather than Midnight's lifted bodily. Amber and\n     violet keep the same lightness offset off the shared 0.52 that they carry\n     in Midnight, for the same OKLab-separation reason. */\n  --host-rose: 0.52 0.16 355; /*                                       #ab366e */\n  --host-amber: 0.58 0.125 66; /*                                      #ab690e */\n  --host-lime: 0.52 0.155 118; /*                                      #637100 */\n  --host-cyan: 0.52 0.155 204; /*                                      #087780 */\n  --host-blue: 0.52 0.155 258; /*                                      #2766c0 */\n  --host-violet: 0.55 0.165 328; /*                                    #a247a1 */\n\n  /* Agent account identity — same hues as Midnight at a lower lightness. The\n     glyph set stays bold (3:1 is all a non-text mark needs). The ink set for\n     small text must reach 4.5:1 on the light surfaces, so amber, lime and cyan\n     go darker and shift a few degrees of hue to keep their distance from the\n     warning, success and brand colors at the lightness 4.5:1 needs. */\n  --account-rose: 0.55 0.22 352;\n  --account-amber: 0.58 0.124 72;\n  --account-lime: 0.55 0.13 125;\n  --account-cyan: 0.56 0.095 210;\n  --account-blue: 0.5 0.18 258;\n  --account-violet: 0.5 0.23 320;\n  --account-ink-rose: 0.545 0.22 352;\n  --account-ink-amber: 0.435 0.095 66;\n  --account-ink-lime: 0.51 0.122 121;\n  --account-ink-cyan: 0.5 0.075 218;\n  --account-ink-blue: 0.5 0.18 258;\n  --account-ink-violet: 0.5 0.23 320;\n\n  /* Channel ink flips to the icon's FRAME color, for dark-on-light legibility;\n     the mark trio repeats Midnight's values verbatim (brand artwork, not\n     themed). */\n  --channel-staging: 0.501 0.209 265;\n  --channel-staging-mark-hi: 0.958 0.021 246;\n  --channel-staging-mark-mid: 0.66 0.17 265;\n  --channel-staging-mark-deep: 0.561 0.15 265;\n  --channel-dev: 0.508 0.204 300;\n  --channel-dev-mark-hi: 0.961 0.024 309;\n  --channel-dev-mark-mid: 0.66 0.169 300;\n  --channel-dev-mark-deep: 0.56 0.15 300;\n  --channel-source: 0.346 0.079 45;\n  --channel-source-mark-hi: 0.955 0.032 69;\n  --channel-source-mark-mid: 0.66 0.167 53;\n  --channel-source-mark-deep: 0.56 0.145 52;\n\n  /* Lighter than the dark themes', and still a DARKENING wash: a scrim's job is\n     to push\n     the page back, which a pale overlay cannot do in either theme. */\n  --scrim: 0.2 0.012 264 / 0.5;\n\n  --diff-added: 0.48 0.15 150 / 0.12;\n  --diff-removed: 0.48 0.15 22 / 0.12;\n\n  /* Code-view highlights — mid-tones against the near-white plate, under\n     near-black ink. */\n  --code-selection: 0.605 0.09 178.8;\n  --code-find: 0.62 0.12 95;\n  --code-find-current: 0.63 0.15 40;\n  --code-highlight-ink: 0.15 0.012 264;\n\n  --lane-1: 0.52 0.15 150;\n  --lane-2: 0.52 0.15 195;\n  --lane-3: 0.52 0.15 240;\n  --lane-4: 0.52 0.15 285;\n  --lane-5: 0.52 0.15 330;\n  --lane-6: 0.52 0.15 15;\n  --lane-7: 0.52 0.15 60;\n  --lane-8: 0.52 0.15 105;\n\n  --provider-github: 0.278 0.012 248;\n  --provider-gitlab: 0.5 0.166 37;\n  --provider-jira: 0.45 0.171 263;\n  --provider-linear: 0.45 0.217 284;\n\n  /* Usage gauge — consumed is the DARKER of the pair on light. */\n  --usage-track: 0.788 0.017 264;\n  --usage-consumed: 0.424 0.073 180;\n  /* The neutral track already clears 3:1 for every status tone on light. */\n  --usage-track-toned: 0.788 0.017 264;\n\n  /* Light lifts by shadow, since the surface ramp runs out of headroom. */\n  --elevation-raised: 0 1px 2px oklch(0.2 0.02 264 / 0.06);\n  --elevation-overlay:\n    0 8px 24px -8px oklch(0.2 0.02 264 / 0.18), 0 2px 6px -2px oklch(0.2 0.02 264 / 0.1);\n\n  /* Control track and thumb: lighter shadows, and an ink hairline in place of\n     black so the thumb's edge stays soft on the light track. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.08);\n  --control-thumb-shadow: 0 1px 2px oklch(0 0 0 / 0.14), 0 0 0 1px oklch(var(--ink) / 0.08);\n\n  color-scheme: light;\n}\n";
+
+//#endregion
+//#region src/ui/themes/kepler-syntax.json
+var kepler_syntax_default = {
+	dark: {
+		"base": "dark-plus",
+		"tokenColors": [
+			{
+				"name": "Default text, operators, punctuation",
+				"scope": [
+					"source",
+					"text",
+					"meta.embedded",
+					"source.groovy.embedded",
+					"string meta.image.inline.markdown",
+					"variable.legacy.builtin.python",
+					"meta.template.expression",
+					"keyword.operator",
+					"storage.modifier.import.java",
+					"variable.language.wildcard.java",
+					"storage.modifier.package.java",
+					"entity.name.label"
+				],
+				"settings": { "foreground": "#c1c4c9" }
+			},
+			{
+				"name": "Keywords, storage, this, language constants, tags",
+				"scope": [
+					"header",
+					"constant.language",
+					"entity.name.tag",
+					"markup.bold",
+					"markup.heading",
+					"markup.changed",
+					"punctuation.definition.list.begin.markdown",
+					"meta.preprocessor",
+					"entity.name.function.preprocessor",
+					"meta.diff.header",
+					"storage",
+					"storage.type",
+					"storage.modifier",
+					"keyword.operator.noexcept",
+					"punctuation.definition.template-expression.begin",
+					"punctuation.definition.template-expression.end",
+					"punctuation.section.embedded",
+					"keyword",
+					"keyword.operator.new",
+					"keyword.operator.expression",
+					"keyword.operator.cast",
+					"keyword.operator.sizeof",
+					"keyword.operator.alignof",
+					"keyword.operator.typeid",
+					"keyword.operator.alignas",
+					"keyword.operator.instanceof",
+					"keyword.operator.logical.python",
+					"keyword.operator.wordlike",
+					"punctuation.section.embedded.begin.php",
+					"punctuation.section.embedded.end.php",
+					"variable.language",
+					"constant.character",
+					"constant.other.option"
+				],
+				"settings": { "foreground": "#70a6f5" }
+			},
+			{
+				"name": "Comments",
+				"scope": ["comment", "punctuation.definition.quote.begin.markdown"],
+				"settings": {
+					"foreground": "#98a6b8",
+					"fontStyle": "italic"
+				}
+			},
+			{
+				"name": "Numbers, enum values, units",
+				"scope": [
+					"constant.numeric",
+					"keyword.operator.plus.exponent",
+					"keyword.operator.minus.exponent",
+					"markup.inserted",
+					"meta.preprocessor.numeric",
+					"keyword.other.unit",
+					"constant.sha.git-rebase"
+				],
+				"settings": { "foreground": "#96c07f" }
+			},
+			{
+				"name": "Regex, escapes, CSS selectors, invalid",
+				"scope": [
+					"constant.regexp",
+					"entity.name.tag.css",
+					"entity.name.tag.less",
+					"entity.other.attribute-name.class.css",
+					"source.css entity.other.attribute-name.class",
+					"entity.other.attribute-name.id.css",
+					"entity.other.attribute-name.parent-selector.css",
+					"entity.other.attribute-name.parent.less",
+					"source.css entity.other.attribute-name.pseudo-class",
+					"entity.other.attribute-name.pseudo-element.css",
+					"source.css.less entity.other.attribute-name.id",
+					"entity.other.attribute-name.scss",
+					"invalid",
+					"string.regexp",
+					"constant.character.character-class.regexp",
+					"constant.other.character-class.set.regexp",
+					"constant.other.character-class.regexp",
+					"constant.character.set.regexp",
+					"keyword.operator.quantifier.regexp",
+					"constant.character.escape"
+				],
+				"settings": { "foreground": "#eb8987" }
+			},
+			{
+				"name": "Variables, parameters, properties, attributes",
+				"scope": [
+					"entity.other.attribute-name",
+					"meta.structure.dictionary.key.python",
+					"support.type.vendored.property-name",
+					"support.type.property-name",
+					"source.css variable",
+					"source.coffee.embedded",
+					"support.function.git-rebase",
+					"variable",
+					"meta.definition.variable.name",
+					"support.variable",
+					"entity.name.variable",
+					"constant.other.placeholder",
+					"meta.object-literal.key"
+				],
+				"settings": { "foreground": "#b4e7fc" }
+			},
+			{
+				"name": "Strings",
+				"scope": [
+					"markup.deleted",
+					"markup.inline.raw",
+					"meta.preprocessor.string",
+					"string",
+					"meta.embedded.assembly",
+					"string.tag",
+					"string.value",
+					"support.constant.property-value",
+					"support.constant.font-name",
+					"support.constant.media-type",
+					"support.constant.media",
+					"constant.other.color.rgb-value",
+					"constant.other.rgb-value",
+					"support.constant.color",
+					"punctuation.definition.group.regexp",
+					"punctuation.definition.group.assertion.regexp",
+					"punctuation.definition.character-class.regexp",
+					"punctuation.character.set.begin.regexp",
+					"punctuation.character.set.end.regexp",
+					"keyword.operator.negation.regexp",
+					"support.other.parenthesis.regexp"
+				],
+				"settings": { "foreground": "#e4ad84" }
+			},
+			{
+				"name": "Tag brackets",
+				"scope": ["punctuation.definition.tag"],
+				"settings": { "foreground": "#98a6b8" }
+			},
+			{
+				"name": "Functions",
+				"scope": [
+					"entity.name.function",
+					"support.function",
+					"support.constant.handlebars",
+					"source.powershell variable.other.member",
+					"entity.name.operator.custom-literal",
+					"keyword.operator.or.regexp",
+					"keyword.control.anchor.regexp"
+				],
+				"settings": { "foreground": "#e5d494" }
+			},
+			{
+				"name": "Types, classes, namespaces",
+				"scope": [
+					"support.class",
+					"support.type",
+					"entity.name.type",
+					"entity.name.namespace",
+					"entity.other.attribute",
+					"entity.name.scope-resolution",
+					"entity.name.class",
+					"storage.type.numeric.go",
+					"storage.type.byte.go",
+					"storage.type.boolean.go",
+					"storage.type.string.go",
+					"storage.type.uintptr.go",
+					"storage.type.error.go",
+					"storage.type.rune.go",
+					"storage.type.cs",
+					"storage.type.generic.cs",
+					"storage.type.modifier.cs",
+					"storage.type.variable.cs",
+					"storage.type.annotation.java",
+					"storage.type.generic.java",
+					"storage.type.java",
+					"storage.type.object.array.java",
+					"storage.type.primitive.array.java",
+					"storage.type.primitive.java",
+					"storage.type.token.java",
+					"storage.type.groovy",
+					"storage.type.annotation.groovy",
+					"storage.type.parameters.groovy",
+					"storage.type.generic.groovy",
+					"storage.type.object.array.groovy",
+					"storage.type.primitive.array.groovy",
+					"storage.type.primitive.groovy",
+					"meta.type.cast.expr",
+					"meta.type.new.expr",
+					"support.constant.math",
+					"support.constant.dom",
+					"support.constant.json",
+					"entity.other.inherited-class",
+					"punctuation.separator.namespace.ruby"
+				],
+				"settings": { "foreground": "#7cd3cd" }
+			},
+			{
+				"name": "Control flow, import/export",
+				"scope": [
+					"keyword.control",
+					"source.cpp keyword.operator.new",
+					"keyword.operator.delete",
+					"keyword.other.using",
+					"keyword.other.directive.using",
+					"keyword.other.operator",
+					"entity.name.operator"
+				],
+				"settings": { "foreground": "#d192ce" }
+			},
+			{
+				"name": "Constants, enum members",
+				"scope": ["variable.other.constant", "variable.other.enummember"],
+				"settings": { "foreground": "#95cefe" }
+			}
+		]
+	},
+	light: {
+		"base": "light-plus",
+		"tokenColors": [
+			{
+				"name": "Default text, operators, punctuation",
+				"scope": [
+					"source",
+					"text",
+					"meta.embedded",
+					"source.groovy.embedded",
+					"string meta.image.inline.markdown",
+					"variable.legacy.builtin.python",
+					"meta.template.expression",
+					"keyword.operator",
+					"storage.modifier.import.java",
+					"variable.language.wildcard.java",
+					"storage.modifier.package.java",
+					"keyword.operator.quantifier.regexp",
+					"entity.name.label"
+				],
+				"settings": { "foreground": "#21242a" }
+			},
+			{
+				"name": "Variables, parameters, properties",
+				"scope": [
+					"meta.diff.header",
+					"markup.bold",
+					"variable",
+					"meta.definition.variable.name",
+					"support.variable",
+					"entity.name.variable",
+					"constant.other.placeholder",
+					"meta.object-literal.key"
+				],
+				"settings": { "foreground": "#102e6a" }
+			},
+			{
+				"name": "Comments",
+				"scope": ["comment"],
+				"settings": {
+					"foreground": "#636575",
+					"fontStyle": "italic"
+				}
+			},
+			{
+				"name": "Keywords, storage, this, language constants",
+				"scope": [
+					"constant.language",
+					"meta.preprocessor",
+					"entity.name.function.preprocessor",
+					"storage",
+					"storage.type",
+					"storage.modifier",
+					"keyword.operator.noexcept",
+					"string.comment.buffered.block.pug",
+					"string.quoted.pug",
+					"string.interpolated.pug",
+					"string.unquoted.plain.in.yaml",
+					"string.unquoted.plain.out.yaml",
+					"string.unquoted.block.yaml",
+					"string.quoted.single.yaml",
+					"string.quoted.double.xml",
+					"string.quoted.single.xml",
+					"string.unquoted.cdata.xml",
+					"string.quoted.double.html",
+					"string.quoted.single.html",
+					"string.unquoted.html",
+					"string.quoted.single.handlebars",
+					"string.quoted.double.handlebars",
+					"punctuation.definition.template-expression.begin",
+					"punctuation.definition.template-expression.end",
+					"punctuation.section.embedded",
+					"keyword",
+					"keyword.operator.new",
+					"keyword.operator.expression",
+					"keyword.operator.cast",
+					"keyword.operator.sizeof",
+					"keyword.operator.alignof",
+					"keyword.operator.typeid",
+					"keyword.operator.alignas",
+					"keyword.operator.instanceof",
+					"keyword.operator.logical.python",
+					"keyword.operator.wordlike",
+					"variable.language",
+					"constant.character",
+					"constant.other.option"
+				],
+				"settings": { "foreground": "#254cba" }
+			},
+			{
+				"name": "Numbers, enum values, units",
+				"scope": [
+					"constant.numeric",
+					"keyword.operator.plus.exponent",
+					"keyword.operator.minus.exponent",
+					"markup.inserted",
+					"meta.preprocessor.numeric",
+					"keyword.other.unit",
+					"constant.sha.git-rebase"
+				],
+				"settings": { "foreground": "#3a7234" }
+			},
+			{
+				"name": "Tags, regex, CSS selectors",
+				"scope": [
+					"constant.regexp",
+					"entity.name.tag",
+					"entity.name.selector",
+					"entity.other.attribute-name.class.css",
+					"source.css entity.other.attribute-name.class",
+					"entity.other.attribute-name.id.css",
+					"entity.other.attribute-name.parent-selector.css",
+					"entity.other.attribute-name.parent.less",
+					"source.css entity.other.attribute-name.pseudo-class",
+					"entity.other.attribute-name.pseudo-element.css",
+					"source.css.less entity.other.attribute-name.id",
+					"entity.other.attribute-name.scss",
+					"markup.heading",
+					"markup.inline.raw",
+					"punctuation.definition.tag",
+					"string.regexp",
+					"punctuation.section.embedded.begin.php",
+					"punctuation.section.embedded.end.php",
+					"constant.character.character-class.regexp",
+					"constant.other.character-class.set.regexp",
+					"constant.other.character-class.regexp",
+					"constant.character.set.regexp"
+				],
+				"settings": { "foreground": "#85253a" }
+			},
+			{
+				"name": "Attributes, CSS properties, escapes, invalid",
+				"scope": [
+					"entity.other.attribute-name",
+					"invalid",
+					"support.type.vendored.property-name",
+					"support.type.property-name",
+					"source.css variable",
+					"source.coffee.embedded",
+					"keyword.operator.or.regexp",
+					"keyword.control.anchor.regexp",
+					"constant.character.escape"
+				],
+				"settings": { "foreground": "#be2e31" }
+			},
+			{
+				"name": "Strings, regex groups",
+				"scope": [
+					"markup.deleted",
+					"meta.preprocessor.string",
+					"string",
+					"meta.embedded.assembly",
+					"punctuation.definition.group.regexp",
+					"punctuation.definition.group.assertion.regexp",
+					"punctuation.definition.character-class.regexp",
+					"punctuation.character.set.begin.regexp",
+					"punctuation.character.set.end.regexp",
+					"keyword.operator.negation.regexp",
+					"support.other.parenthesis.regexp"
+				],
+				"settings": { "foreground": "#8b3f03" }
+			},
+			{
+				"name": "Constants, enum members, JSON keys, CSS values",
+				"scope": [
+					"markup.changed",
+					"punctuation.definition.quote.begin.markdown",
+					"punctuation.definition.list.begin.markdown",
+					"meta.structure.dictionary.key.python",
+					"support.type.property-name.json",
+					"support.function.git-rebase",
+					"variable.other.constant",
+					"variable.other.enummember",
+					"support.constant.property-value",
+					"support.constant.font-name",
+					"support.constant.media-type",
+					"support.constant.media",
+					"constant.other.color.rgb-value",
+					"constant.other.rgb-value",
+					"support.constant.color"
+				],
+				"settings": { "foreground": "#005078" }
+			},
+			{
+				"name": "Functions",
+				"scope": [
+					"entity.name.function",
+					"support.function",
+					"support.constant.handlebars",
+					"source.powershell variable.other.member",
+					"entity.name.operator.custom-literal"
+				],
+				"settings": { "foreground": "#6f5c01" }
+			},
+			{
+				"name": "Types, classes, namespaces",
+				"scope": [
+					"support.class",
+					"support.type",
+					"entity.name.type",
+					"entity.name.namespace",
+					"entity.other.attribute",
+					"entity.name.scope-resolution",
+					"entity.name.class",
+					"storage.type.numeric.go",
+					"storage.type.byte.go",
+					"storage.type.boolean.go",
+					"storage.type.string.go",
+					"storage.type.uintptr.go",
+					"storage.type.error.go",
+					"storage.type.rune.go",
+					"storage.type.cs",
+					"storage.type.generic.cs",
+					"storage.type.modifier.cs",
+					"storage.type.variable.cs",
+					"storage.type.annotation.java",
+					"storage.type.generic.java",
+					"storage.type.java",
+					"storage.type.object.array.java",
+					"storage.type.primitive.array.java",
+					"storage.type.primitive.java",
+					"storage.type.token.java",
+					"storage.type.groovy",
+					"storage.type.annotation.groovy",
+					"storage.type.parameters.groovy",
+					"storage.type.generic.groovy",
+					"storage.type.object.array.groovy",
+					"storage.type.primitive.array.groovy",
+					"storage.type.primitive.groovy",
+					"meta.type.cast.expr",
+					"meta.type.new.expr",
+					"support.constant.math",
+					"support.constant.dom",
+					"support.constant.json",
+					"entity.other.inherited-class",
+					"punctuation.separator.namespace.ruby"
+				],
+				"settings": { "foreground": "#047079" }
+			},
+			{
+				"name": "Control flow, import/export",
+				"scope": [
+					"keyword.control",
+					"source.cpp keyword.operator.new",
+					"source.cpp keyword.operator.delete",
+					"keyword.other.using",
+					"keyword.other.directive.using",
+					"keyword.other.operator",
+					"entity.name.operator"
+				],
+				"settings": { "foreground": "#953490" }
+			}
+		]
+	}
+};
+
+//#endregion
+//#region src/backend/themes/theme-sources.ts
+const BUNDLED_FAMILIES = Object.values([]);
+/** Kepler's own syntax palette, which a theme naming no Shiki theme draws code in. */
+const KEPLER_SYNTAX = kepler_syntax_default;
+let palettes;
+/** The built-in palettes as the stylesheet declares them, parsed on first use. */
+function builtInThemePalettes() {
+	palettes ??= builtInPalettes(_kepler_palette_css_default);
+	return palettes;
+}
+let bundledIds;
+/** The ids of the themes that ship with Kepler as family files. */
+function bundledThemeIds() {
+	bundledIds ??= new Set(BUNDLED_FAMILIES.flatMap((raw) => parseThemeFamily(raw).family?.themes.map((t) => t.id) ?? []));
+	return bundledIds;
 }
 
 //#endregion
@@ -7635,523 +8324,6 @@ function parseFamily(file, text) {
 }
 
 //#endregion
-//#region \0kepler:palette-css
-var _kepler_palette_css_default = "\n:root {\n  /* Neutral surfaces — monotonically lighter as elevation rises. */\n  --surface-sunken: 0.145 0.006 264; /* wells, inputs, code blocks   #090a0d */\n  --surface-canvas: 0.17 0.006 264; /* app background                #0e0f12 */\n  --surface-raised: 0.198 0.007 264; /* panels, cards, list surfaces #141619 */\n  --surface-overlay: 0.228 0.008 264; /* menus, popovers             #1b1c20 */\n\n  /* Ink — one color, four alpha steps. Worst-case ratios against the LIGHTEST\n     surface (overlay): strong 15.3 · content 11.4 · muted 7.2 · subtle 4.8. */\n  --ink: 0.965 0.004 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.85;\n  --content-muted: var(--ink) / 0.65;\n  --content-subtle: var(--ink) / 0.5;\n  --content-on-accent: var(--surface-sunken);\n\n  /* Fills — ink at low alpha, so they tint whatever they sit on. */\n  --fill-subtle: var(--ink) / 0.04;\n  --fill-muted: var(--ink) / 0.07;\n  --fill-strong: var(--ink) / 0.11;\n\n  /* Edges — `edge-strong` is the 3:1 control boundary (measured 3.00). */\n  --edge-subtle: var(--ink) / 0.08;\n  --edge: var(--ink) / 0.14;\n  --edge-strong: var(--ink) / 0.35;\n  /* Decorative line, between `edge` and `edge-strong`: visible on the canvas\n     without borrowing the control boundary's contrast contract. */\n  --edge-decor: var(--ink) / 0.22;\n\n  /* A sash's own element thickness and its (larger) grab/hover zone. The\n     hit-zone value is shared with the `Sash` primitive's panel-library\n     configuration — see the RESIZE HANDLES block below for why the two\n     must agree. */\n  --dock-tab-drop-line-size: 3px;\n  --sash-size: 5px;\n  --sash-hit: 12px;\n  /* How long the pointer rests on a sash before it lights up. A sash sits\n     between two surfaces the pointer crosses constantly, and lighting up on\n     every pass reads as flicker; the delay is what makes the highlight mean\n     \"you could drag this\". */\n  --sash-hover-delay: 250ms;\n\n  /* Brand teal. Lighter than the previous #1f8f7c and paired with near-black\n     ink rather than white: white on the old teal measured 4.02:1, under the\n     AA floor, and no single teal can satisfy both \"readable as text on the\n     canvas\" (wants lighter) and \"readable under white ink\" (wants darker).\n     Dark ink resolves the conflict with one color instead of two.\n     ink-on-brand 6.68 · brand-on-canvas 6.47 · on its badge tint 4.59 */\n  --brand: 0.66 0.099 178.8; /*                                     #3fa693 */\n  --brand-hover: 0.71 0.106 178.8;\n  --brand-active: 0.61 0.092 178.8;\n  /* Solid brand surfaces and the ink on them. Raw aliases resolved at the point\n     of use, so Dark and Light follow their own `--brand`/`--content-on-accent`;\n     a custom theme overrides them when its text-safe brand cannot carry text. */\n  --brand-fill: var(--brand);\n  --brand-fill-hover: var(--brand-hover);\n  --brand-fill-active: var(--brand-active);\n  --content-on-brand: var(--content-on-accent);\n\n  /* AI purple. Higher chroma than the status ramp, and 15° off status-merged,\n     so the system's only two purples stay separable.\n     ai-on-canvas 6.11 · ink-on-ai 7.11 */\n  --ai: 0.7 0.185 285; /*                                           #968dfe */\n  --ai-hover: 0.75 0.175 285;\n\n  /* Selection & focus — brand-tinted. The ink is text on the wash: a step\n     lighter than brand, because a segmented control lays the wash over its own\n     track, and brand there falls under 4.5:1 over an overlay.\n     on the wash, worst over the track 4.67 */\n  --selected-bg: var(--brand) / 0.14;\n  --selected-border: var(--brand) / 0.45;\n  --selected-ink: 0.69 0.099 178.8; /*                              #4aaf9c */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Status ramp — identical L and C, hue only. Worst ratio in the set: 6.39. */\n  --status-success: 0.72 0.155 150; /* running, open, passing       #4fbf6e */\n  --status-info: 0.72 0.155 230; /* building, in progress, info   #04b4ec */\n  --status-warning: 0.72 0.155 82; /* review, spawning, degraded    #d29a08 */\n  --status-attention: 0.72 0.155 50; /* BLOCKED ON YOU              #f08440 */\n  --status-danger: 0.72 0.155 22; /* errored, closed, failed        #f67878 */\n  --status-merged: 0.72 0.155 300; /* merged PR, finished issue, done task #b48cf6 */\n  --status-dormant: 0.58 0.01 264; /* disconnected-session ring — see @theme */\n\n  /* Host identity — six hues spread around the wheel at ~0.125-0.165 chroma\n     (raised from a muted 0.09 that read as six near-identical pastels), each\n     placed and measured to clear an OKLab distance from brand/ai/every status\n     hue (checked by a dedicated test) rather than eyeballed. Amber sits in\n     the narrow gap between status-attention and status-warning, and violet in\n     the narrow gap between ai and status-merged; both borrow extra separation\n     from lightness (off the shared 0.72) where hue alone can't clear the\n     floor, which is also what keeps all six apart under red-green color\n     vision deficiency. Dark inherits these unchanged (same reasoning as the\n     status ramp): both dark themes solve the same contrast problem at the\n     same amplitude, so a second set of numbers here would only be Midnight's\n     copied by hand. */\n  --host-rose: 0.72 0.16 355; /*                                       #f075aa */\n  --host-amber: 0.78 0.125 66; /*                                      #eda65a */\n  --host-lime: 0.72 0.155 118; /*                                      #9db128 */\n  --host-cyan: 0.72 0.155 204; /*                                      #0fbac7 */\n  --host-blue: 0.72 0.155 258; /*                                      #69a5fe */\n  --host-violet: 0.75 0.165 328; /*                                    #e585e2 */\n\n  /* Agent account identity, in two sets of the same six hues. The bold\n     `--account-*` set tints a ~14px glyph and the picker swatch: it needs\n     enough chroma to read against muted-gray neighbours and only 3:1 as a\n     non-text mark. The `--account-ink-*` set colors the small account name and\n     address in the session hover card, which needs 4.5:1 on every surface,\n     the overlay included; in light that forces a darker ink, so the two sets\n     diverge there and are identical here.\n     Chroma is pushed to what sRGB holds at each lightness (hues differ, so\n     cyan stays quieter than violet) and hues are moved off the status ramp,\n     brand and ai (rose leans pink, away from danger) because an account\n     color must never read as state. Dark inherits both sets unchanged. */\n  --account-rose: 0.72 0.2 352;\n  --account-amber: 0.8 0.16 72;\n  --account-lime: 0.8 0.19 125;\n  --account-cyan: 0.78 0.125 210;\n  --account-blue: 0.67 0.175 258;\n  --account-violet: 0.7 0.23 320;\n  --account-ink-rose: 0.72 0.2 352;\n  --account-ink-amber: 0.8 0.16 72;\n  --account-ink-lime: 0.8 0.19 125;\n  --account-ink-cyan: 0.78 0.125 210;\n  --account-ink-blue: 0.67 0.175 258;\n  --account-ink-violet: 0.7 0.23 320;\n\n  /* Channel badge/mark — mirrors the channel icon tints (shared table in\n     scripts/_channel-tints.mjs): staging blue, dev purple, source rust.\n     The ink is the icon's PILL color, its brightest element, which is what a\n     small dark-surface badge wants; the mark trio recolors the title-bar\n     mark's own gradient stops (both its highlights to `-mark-hi`, both its\n     deep stops to `-mark-deep`) and is repeated verbatim in light below,\n     since it is brand artwork rather than a themed surface. */\n  --channel-staging: 0.674 0.172 264; /* pill  #5F91FF */\n  --channel-staging-mark-hi: 0.958 0.021 246; /* #E6F3FF */\n  --channel-staging-mark-mid: 0.66 0.17 265; /* #5E8CF9 */\n  --channel-staging-mark-deep: 0.561 0.15 265; /* #486FCC */\n  --channel-dev: 0.728 0.168 301; /* pill  #B98BFF */\n  --channel-dev-mark-hi: 0.961 0.024 309; /* #F7EEFF */\n  --channel-dev-mark-mid: 0.66 0.169 300; /* #A376E9 */\n  --channel-dev-mark-deep: 0.56 0.15 300; /* #835CBE */\n  --channel-source: 0.779 0.127 63; /* pill  #F0A45A */\n  --channel-source-mark-hi: 0.955 0.032 69; /* #FFEDDA */\n  --channel-source-mark-mid: 0.66 0.167 53; /* #DE6F00 */\n  --channel-source-mark-deep: 0.56 0.145 52; /* #B45600 */\n\n  /* Modal scrim — darkens toward the canvas hue rather than to neutral black,\n     so a dialog's backdrop stays part of the same world. */\n  --scrim: 0.08 0.008 264 / 0.72;\n\n  /* Diff washes — low-alpha line backgrounds, hue-matched to the status ramp. */\n  --diff-added: 0.72 0.155 150 / 0.14;\n  --diff-removed: 0.72 0.155 22 / 0.14;\n\n  /* Code-view highlights — opaque so the measured contrast is the real one. Teal\n     for selection (the brand hue), amber for find, orange for the current match;\n     the ink is white because the highlights are mid-tone and light grey ink\n     cannot be 4.5:1 on a background that is also 3:1 from the plate. */\n  --code-selection: 0.525 0.09 178.8;\n  --code-find: 0.535 0.12 95;\n  --code-find-current: 0.55 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Commit-graph lanes — 8 hues, 45° apart, one L and C. */\n  --lane-1: 0.74 0.15 150;\n  --lane-2: 0.74 0.15 195;\n  --lane-3: 0.74 0.15 240;\n  --lane-4: 0.74 0.15 285;\n  --lane-5: 0.74 0.15 330;\n  --lane-6: 0.74 0.15 15;\n  --lane-7: 0.74 0.15 60;\n  --lane-8: 0.74 0.15 105;\n\n  /* Providers — external brand colors, lifted to readable lightness on the\n     dark themes. */\n  --provider-github: 0.857 0.014 248;\n  --provider-gitlab: 0.753 0.145 37;\n  --provider-jira: 0.73 0.116 258;\n  --provider-linear: 0.772 0.115 294;\n\n  /* Usage gauge — consumed is the BRIGHTER of the pair on the dark themes. */\n  --usage-track: 0.464 0.019 264;\n  --usage-consumed: 0.825 0.126 180;\n  /* Track for bars filled with a status tone. The neutral track is too light for\n     a status fill to clear 3:1 against it on the dark themes, so this one is\n     darker; Dark inherits it, and it clears 3:1 for all three tones on both. */\n  --usage-track-toned: 0.42 0.019 264;\n\n  /* Type stacks. The system stack is the right voice for a desktop tool: it is\n     the reader's own UI face, it needs no network, and it renders at the\n     platform's own hinting. */\n  --sans-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  --mono-font: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;\n\n  /* Elevation — the dark themes lift by lightness, so shadows only anchor true\n     overlays. */\n  --elevation-raised: 0 0 #0000;\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.7), 0 2px 6px -2px oklch(0 0 0 / 0.5);\n\n  /* The selected segment's fill. A separate token from the overlay surface so\n     a theme can lift its controls without also lifting every menu and popover;\n     by default it is the overlay, resolved where it is used, so Dark, Light and\n     every data theme inherit their own overlay. */\n  --control-thumb: var(--surface-overlay);\n\n  /* Control track and thumb (segmented control). The track is a well: an inset\n     shadow on the sunken surface. The thumb is raised by a 1px top highlight,\n     a drop shadow and a hairline of black that keeps its edge on the track.\n     Dark inherits these, and so does every data theme by its base's polarity. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.45);\n  --control-thumb-shadow:\n    inset 0 1px 0 oklch(var(--ink) / 0.1), 0 1px 2px oklch(0 0 0 / 0.55),\n    0 0 0 1px oklch(0 0 0 / 0.35);\n\n  color-scheme: dark;\n}\n\n:root.dark {\n  /* Midnight's ramp lifted bodily — same hue, same chroma, same step sizes. */\n  --surface-sunken: 0.205 0.006 264; /* wells, inputs, code blocks   #16171a */\n  --surface-canvas: 0.232 0.006 264; /* app background               #1c1d20 */\n  --surface-raised: 0.262 0.007 264; /* panels, cards, list surfaces #232528 */\n  --surface-overlay: 0.295 0.008 264; /* menus, popovers             #2a2d31 */\n\n  /* Ink drops with the surfaces rather than holding at Midnight's near-white, which\n     is what keeps this a softer theme instead of merely a greyer one. Worst-case\n     ratios against the LIGHTEST surface (overlay): strong 10.9 · content 8.6 ·\n     muted 6.3 · subtle 4.7. `--content-strong` and `--content-on-accent` are\n     inherited: both are written against tokens this block overrides. */\n  --ink: 0.92 0.004 264;\n  --content: var(--ink) / 0.87;\n  --content-muted: var(--ink) / 0.71;\n  --content-subtle: var(--ink) / 0.58;\n\n  /* Fills — alphas raised to hold Midnight's composited lightness delta (0.039 /\n     0.065 / 0.101), not Midnight's alphas, which would read thinner up here. */\n  --fill-subtle: var(--ink) / 0.05;\n  --fill-muted: var(--ink) / 0.085;\n  --fill-strong: var(--ink) / 0.13;\n\n  /* Edges — same treatment. `edge-strong` keeps the 3:1 control boundary\n     (measured 3.24) and is the one value here tuned to a ratio rather than to\n     Midnight's appearance. */\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.17;\n  --edge-strong: var(--ink) / 0.41;\n  --edge-decor: var(--ink) / 0.26;\n\n  /* Brand teal, lifted above Midnight's #3fa693, which would sit too close to\n     these lighter surfaces and to its own badge tint over them. Same hue and\n     the same near-black ink on top, so the action color is recognisably the\n     product's. brand-on-canvas 7.36 · ink-on-brand 7.83 · on its badge tint 4.58 */\n  --brand: 0.73 0.106 178.8; /*                                      #4ebda9 */\n  --brand-hover: 0.78 0.112 178.8;\n  --brand-active: 0.68 0.1 178.8;\n\n  /* AI purple, lifted so it still reads as text on its own badge tint over\n     these surfaces. ai-on-canvas 7.34 · ink-on-ai 7.81 · on its badge tint 4.57 */\n  --ai: 0.75 0.185 285; /*                                           #a6a1fe */\n  --ai-hover: 0.8 0.175 285;\n\n  /* Selection reads off a lighter brand, so the tint needs a touch more of it\n     to separate from a lighter row underneath. */\n  --selected-bg: var(--brand) / 0.16;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.60 */\n  --selected-ink: 0.77 0.106 178.8; /*                              #5ccab5 */\n\n  /* The six status hues are Midnight's, unchanged (AI purple is lifted above):\n     all of them still clear their floors here (worst in the status set 5.19), and a\n     second ramp at a second lightness is exactly the duplication the system\n     exists to remove. The dormant ring is the one exception — it is tuned\n     AGAINST its surface by construction, so it has to move with it (3.94, beside\n     Midnight's 3.96). */\n  --status-dormant: 0.63 0.01 264;\n\n  /* Scrim lightens with the canvas it dims. Still a darkening wash — a scrim\n     that merely greys the page cannot push it back. */\n  --scrim: 0.12 0.008 264 / 0.7;\n\n  /* Diff washes — same hues, a little more of them, since a 14% tint over a\n     lighter line is a fainter stripe. */\n  --diff-added: 0.72 0.155 150 / 0.15;\n  --diff-removed: 0.72 0.155 22 / 0.15;\n\n  /* Code-view highlights — the plate is lighter here, so the highlights rise with\n     it and the window that satisfies both 3:1 from the plate and 4.5:1 under\n     white ink narrows to about 0.015 of lightness. */\n  --code-selection: 0.545 0.09 178.8;\n  --code-find: 0.555 0.12 95;\n  --code-find-current: 0.57 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Usage gauge — the track is an opaque grey read against the panel it sits\n     on, so it rises with the panel; consumed is Midnight's and still clears the\n     3:1 the pair owes each other. */\n  --usage-track: 0.5 0.019 264;\n\n  /* Overlay shadow, softened. Elevation is lightness here as on Midnight, so the\n     shadow only anchors true overlays — and Midnight's 0.7 black, dropped on a\n     canvas this much lighter, reads as a hole cut in the page rather than as a\n     lift. `--elevation-raised` stays the inherited no-op. */\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.5), 0 2px 6px -2px oklch(0 0 0 / 0.34);\n\n  color-scheme: dark;\n}\n\n:root.light {\n  --surface-sunken: 0.93 0.006 264; /*                              #e6e8ec */\n  --surface-canvas: 0.958 0.004 264; /*                             #f0f1f4 */\n  --surface-raised: 0.988 0.003 264; /*                             #fafbfd */\n  --surface-overlay: 0.997 0.002 264; /*                            #fefefe */\n\n  /* Worst-case ratios against the DARKEST surface (sunken):\n     strong 14.6 · content 11.4 · muted 7.1 · subtle 4.7. */\n  --ink: 0.205 0.014 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.9;\n  --content-muted: var(--ink) / 0.75;\n  --content-subtle: var(--ink) / 0.62;\n  --content-on-accent: 0.999 0 0;\n\n  --fill-subtle: var(--ink) / 0.045;\n  --fill-muted: var(--ink) / 0.08;\n  --fill-strong: var(--ink) / 0.12;\n\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.16;\n  --edge-strong: var(--ink) / 0.47; /* 3:1 control boundary (measured 3.02) */\n  --edge-decor: var(--ink) / 0.28;\n\n  /* Brand teal, deeper here so it carries white ink and still reads as text.\n     ink-on-brand 7.10 · brand-on-canvas 6.29 · on its badge tint 4.64 */\n  --brand: 0.45 0.098 178.2; /*                                     #026455 */\n  --brand-hover: 0.4 0.09 178.2;\n  --brand-active: 0.36 0.082 178.2;\n\n  --ai: 0.47 0.195 285; /*                                          #563dc1 */\n  --ai-hover: 0.42 0.185 285;\n\n  --selected-bg: var(--brand) / 0.12;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.68 */\n  --selected-ink: 0.44 0.098 178.2; /*                              #036153 */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Same hues as dark at a lightness that clears AA on light surfaces.\n     Worst ratio in the set: 5.02. */\n  --status-success: 0.48 0.15 150; /*                               #007132 */\n  --status-info: 0.48 0.15 230; /*                                  #066788 */\n  --status-warning: 0.48 0.15 82; /*                                #795702 */\n  --status-attention: 0.48 0.15 50; /*                              #934302 */\n  --status-danger: 0.48 0.15 22; /*                                 #a12f35 */\n  --status-merged: 0.48 0.15 300; /*                                #6c44a4 */\n  --status-dormant: 0.54 0.015 264; /* darker than Midnight's — see @theme */\n\n  /* Host identity — same hues and chroma as Midnight, at a lower,\n     independently-tuned lightness, same reasoning as the rest of this\n     theme's restated blocks: light solves a different contrast problem, so\n     it gets its own numbers rather than Midnight's lifted bodily. Amber and\n     violet keep the same lightness offset off the shared 0.52 that they carry\n     in Midnight, for the same OKLab-separation reason. */\n  --host-rose: 0.52 0.16 355; /*                                       #ab366e */\n  --host-amber: 0.58 0.125 66; /*                                      #ab690e */\n  --host-lime: 0.52 0.155 118; /*                                      #637100 */\n  --host-cyan: 0.52 0.155 204; /*                                      #087780 */\n  --host-blue: 0.52 0.155 258; /*                                      #2766c0 */\n  --host-violet: 0.55 0.165 328; /*                                    #a247a1 */\n\n  /* Agent account identity — same hues as Midnight at a lower lightness. The\n     glyph set stays bold (3:1 is all a non-text mark needs). The ink set for\n     small text must reach 4.5:1 on the light surfaces, so amber, lime and cyan\n     go darker and shift a few degrees of hue to keep their distance from the\n     warning, success and brand colors at the lightness 4.5:1 needs. */\n  --account-rose: 0.55 0.22 352;\n  --account-amber: 0.58 0.124 72;\n  --account-lime: 0.55 0.13 125;\n  --account-cyan: 0.56 0.095 210;\n  --account-blue: 0.5 0.18 258;\n  --account-violet: 0.5 0.23 320;\n  --account-ink-rose: 0.545 0.22 352;\n  --account-ink-amber: 0.435 0.095 66;\n  --account-ink-lime: 0.51 0.122 121;\n  --account-ink-cyan: 0.5 0.075 218;\n  --account-ink-blue: 0.5 0.18 258;\n  --account-ink-violet: 0.5 0.23 320;\n\n  /* Channel ink flips to the icon's FRAME color, for dark-on-light legibility;\n     the mark trio repeats Midnight's values verbatim (brand artwork, not\n     themed). */\n  --channel-staging: 0.501 0.209 265;\n  --channel-staging-mark-hi: 0.958 0.021 246;\n  --channel-staging-mark-mid: 0.66 0.17 265;\n  --channel-staging-mark-deep: 0.561 0.15 265;\n  --channel-dev: 0.508 0.204 300;\n  --channel-dev-mark-hi: 0.961 0.024 309;\n  --channel-dev-mark-mid: 0.66 0.169 300;\n  --channel-dev-mark-deep: 0.56 0.15 300;\n  --channel-source: 0.346 0.079 45;\n  --channel-source-mark-hi: 0.955 0.032 69;\n  --channel-source-mark-mid: 0.66 0.167 53;\n  --channel-source-mark-deep: 0.56 0.145 52;\n\n  /* Lighter than the dark themes', and still a DARKENING wash: a scrim's job is\n     to push\n     the page back, which a pale overlay cannot do in either theme. */\n  --scrim: 0.2 0.012 264 / 0.5;\n\n  --diff-added: 0.48 0.15 150 / 0.12;\n  --diff-removed: 0.48 0.15 22 / 0.12;\n\n  /* Code-view highlights — mid-tones against the near-white plate, under\n     near-black ink. */\n  --code-selection: 0.605 0.09 178.8;\n  --code-find: 0.62 0.12 95;\n  --code-find-current: 0.63 0.15 40;\n  --code-highlight-ink: 0.15 0.012 264;\n\n  --lane-1: 0.52 0.15 150;\n  --lane-2: 0.52 0.15 195;\n  --lane-3: 0.52 0.15 240;\n  --lane-4: 0.52 0.15 285;\n  --lane-5: 0.52 0.15 330;\n  --lane-6: 0.52 0.15 15;\n  --lane-7: 0.52 0.15 60;\n  --lane-8: 0.52 0.15 105;\n\n  --provider-github: 0.278 0.012 248;\n  --provider-gitlab: 0.5 0.166 37;\n  --provider-jira: 0.45 0.171 263;\n  --provider-linear: 0.45 0.217 284;\n\n  /* Usage gauge — consumed is the DARKER of the pair on light. */\n  --usage-track: 0.788 0.017 264;\n  --usage-consumed: 0.424 0.073 180;\n  /* The neutral track already clears 3:1 for every status tone on light. */\n  --usage-track-toned: 0.788 0.017 264;\n\n  /* Light lifts by shadow, since the surface ramp runs out of headroom. */\n  --elevation-raised: 0 1px 2px oklch(0.2 0.02 264 / 0.06);\n  --elevation-overlay:\n    0 8px 24px -8px oklch(0.2 0.02 264 / 0.18), 0 2px 6px -2px oklch(0.2 0.02 264 / 0.1);\n\n  /* Control track and thumb: lighter shadows, and an ink hairline in place of\n     black so the thumb's edge stays soft on the light track. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.08);\n  --control-thumb-shadow: 0 1px 2px oklch(0 0 0 / 0.14), 0 0 0 1px oklch(var(--ink) / 0.08);\n\n  color-scheme: light;\n}\n";
-
-//#endregion
-//#region src/ui/themes/kepler-syntax.json
-var kepler_syntax_default = {
-	dark: {
-		"base": "dark-plus",
-		"tokenColors": [
-			{
-				"name": "Default text, operators, punctuation",
-				"scope": [
-					"source",
-					"text",
-					"meta.embedded",
-					"source.groovy.embedded",
-					"string meta.image.inline.markdown",
-					"variable.legacy.builtin.python",
-					"meta.template.expression",
-					"keyword.operator",
-					"storage.modifier.import.java",
-					"variable.language.wildcard.java",
-					"storage.modifier.package.java",
-					"entity.name.label"
-				],
-				"settings": { "foreground": "#c1c4c9" }
-			},
-			{
-				"name": "Keywords, storage, this, language constants, tags",
-				"scope": [
-					"header",
-					"constant.language",
-					"entity.name.tag",
-					"markup.bold",
-					"markup.heading",
-					"markup.changed",
-					"punctuation.definition.list.begin.markdown",
-					"meta.preprocessor",
-					"entity.name.function.preprocessor",
-					"meta.diff.header",
-					"storage",
-					"storage.type",
-					"storage.modifier",
-					"keyword.operator.noexcept",
-					"punctuation.definition.template-expression.begin",
-					"punctuation.definition.template-expression.end",
-					"punctuation.section.embedded",
-					"keyword",
-					"keyword.operator.new",
-					"keyword.operator.expression",
-					"keyword.operator.cast",
-					"keyword.operator.sizeof",
-					"keyword.operator.alignof",
-					"keyword.operator.typeid",
-					"keyword.operator.alignas",
-					"keyword.operator.instanceof",
-					"keyword.operator.logical.python",
-					"keyword.operator.wordlike",
-					"punctuation.section.embedded.begin.php",
-					"punctuation.section.embedded.end.php",
-					"variable.language",
-					"constant.character",
-					"constant.other.option"
-				],
-				"settings": { "foreground": "#70a6f5" }
-			},
-			{
-				"name": "Comments",
-				"scope": ["comment", "punctuation.definition.quote.begin.markdown"],
-				"settings": {
-					"foreground": "#98a6b8",
-					"fontStyle": "italic"
-				}
-			},
-			{
-				"name": "Numbers, enum values, units",
-				"scope": [
-					"constant.numeric",
-					"keyword.operator.plus.exponent",
-					"keyword.operator.minus.exponent",
-					"markup.inserted",
-					"meta.preprocessor.numeric",
-					"keyword.other.unit",
-					"constant.sha.git-rebase"
-				],
-				"settings": { "foreground": "#96c07f" }
-			},
-			{
-				"name": "Regex, escapes, CSS selectors, invalid",
-				"scope": [
-					"constant.regexp",
-					"entity.name.tag.css",
-					"entity.name.tag.less",
-					"entity.other.attribute-name.class.css",
-					"source.css entity.other.attribute-name.class",
-					"entity.other.attribute-name.id.css",
-					"entity.other.attribute-name.parent-selector.css",
-					"entity.other.attribute-name.parent.less",
-					"source.css entity.other.attribute-name.pseudo-class",
-					"entity.other.attribute-name.pseudo-element.css",
-					"source.css.less entity.other.attribute-name.id",
-					"entity.other.attribute-name.scss",
-					"invalid",
-					"string.regexp",
-					"constant.character.character-class.regexp",
-					"constant.other.character-class.set.regexp",
-					"constant.other.character-class.regexp",
-					"constant.character.set.regexp",
-					"keyword.operator.quantifier.regexp",
-					"constant.character.escape"
-				],
-				"settings": { "foreground": "#eb8987" }
-			},
-			{
-				"name": "Variables, parameters, properties, attributes",
-				"scope": [
-					"entity.other.attribute-name",
-					"meta.structure.dictionary.key.python",
-					"support.type.vendored.property-name",
-					"support.type.property-name",
-					"source.css variable",
-					"source.coffee.embedded",
-					"support.function.git-rebase",
-					"variable",
-					"meta.definition.variable.name",
-					"support.variable",
-					"entity.name.variable",
-					"constant.other.placeholder",
-					"meta.object-literal.key"
-				],
-				"settings": { "foreground": "#b4e7fc" }
-			},
-			{
-				"name": "Strings",
-				"scope": [
-					"markup.deleted",
-					"markup.inline.raw",
-					"meta.preprocessor.string",
-					"string",
-					"meta.embedded.assembly",
-					"string.tag",
-					"string.value",
-					"support.constant.property-value",
-					"support.constant.font-name",
-					"support.constant.media-type",
-					"support.constant.media",
-					"constant.other.color.rgb-value",
-					"constant.other.rgb-value",
-					"support.constant.color",
-					"punctuation.definition.group.regexp",
-					"punctuation.definition.group.assertion.regexp",
-					"punctuation.definition.character-class.regexp",
-					"punctuation.character.set.begin.regexp",
-					"punctuation.character.set.end.regexp",
-					"keyword.operator.negation.regexp",
-					"support.other.parenthesis.regexp"
-				],
-				"settings": { "foreground": "#e4ad84" }
-			},
-			{
-				"name": "Tag brackets",
-				"scope": ["punctuation.definition.tag"],
-				"settings": { "foreground": "#98a6b8" }
-			},
-			{
-				"name": "Functions",
-				"scope": [
-					"entity.name.function",
-					"support.function",
-					"support.constant.handlebars",
-					"source.powershell variable.other.member",
-					"entity.name.operator.custom-literal",
-					"keyword.operator.or.regexp",
-					"keyword.control.anchor.regexp"
-				],
-				"settings": { "foreground": "#e5d494" }
-			},
-			{
-				"name": "Types, classes, namespaces",
-				"scope": [
-					"support.class",
-					"support.type",
-					"entity.name.type",
-					"entity.name.namespace",
-					"entity.other.attribute",
-					"entity.name.scope-resolution",
-					"entity.name.class",
-					"storage.type.numeric.go",
-					"storage.type.byte.go",
-					"storage.type.boolean.go",
-					"storage.type.string.go",
-					"storage.type.uintptr.go",
-					"storage.type.error.go",
-					"storage.type.rune.go",
-					"storage.type.cs",
-					"storage.type.generic.cs",
-					"storage.type.modifier.cs",
-					"storage.type.variable.cs",
-					"storage.type.annotation.java",
-					"storage.type.generic.java",
-					"storage.type.java",
-					"storage.type.object.array.java",
-					"storage.type.primitive.array.java",
-					"storage.type.primitive.java",
-					"storage.type.token.java",
-					"storage.type.groovy",
-					"storage.type.annotation.groovy",
-					"storage.type.parameters.groovy",
-					"storage.type.generic.groovy",
-					"storage.type.object.array.groovy",
-					"storage.type.primitive.array.groovy",
-					"storage.type.primitive.groovy",
-					"meta.type.cast.expr",
-					"meta.type.new.expr",
-					"support.constant.math",
-					"support.constant.dom",
-					"support.constant.json",
-					"entity.other.inherited-class",
-					"punctuation.separator.namespace.ruby"
-				],
-				"settings": { "foreground": "#7cd3cd" }
-			},
-			{
-				"name": "Control flow, import/export",
-				"scope": [
-					"keyword.control",
-					"source.cpp keyword.operator.new",
-					"keyword.operator.delete",
-					"keyword.other.using",
-					"keyword.other.directive.using",
-					"keyword.other.operator",
-					"entity.name.operator"
-				],
-				"settings": { "foreground": "#d192ce" }
-			},
-			{
-				"name": "Constants, enum members",
-				"scope": ["variable.other.constant", "variable.other.enummember"],
-				"settings": { "foreground": "#95cefe" }
-			}
-		]
-	},
-	light: {
-		"base": "light-plus",
-		"tokenColors": [
-			{
-				"name": "Default text, operators, punctuation",
-				"scope": [
-					"source",
-					"text",
-					"meta.embedded",
-					"source.groovy.embedded",
-					"string meta.image.inline.markdown",
-					"variable.legacy.builtin.python",
-					"meta.template.expression",
-					"keyword.operator",
-					"storage.modifier.import.java",
-					"variable.language.wildcard.java",
-					"storage.modifier.package.java",
-					"keyword.operator.quantifier.regexp",
-					"entity.name.label"
-				],
-				"settings": { "foreground": "#21242a" }
-			},
-			{
-				"name": "Variables, parameters, properties",
-				"scope": [
-					"meta.diff.header",
-					"markup.bold",
-					"variable",
-					"meta.definition.variable.name",
-					"support.variable",
-					"entity.name.variable",
-					"constant.other.placeholder",
-					"meta.object-literal.key"
-				],
-				"settings": { "foreground": "#102e6a" }
-			},
-			{
-				"name": "Comments",
-				"scope": ["comment"],
-				"settings": {
-					"foreground": "#636575",
-					"fontStyle": "italic"
-				}
-			},
-			{
-				"name": "Keywords, storage, this, language constants",
-				"scope": [
-					"constant.language",
-					"meta.preprocessor",
-					"entity.name.function.preprocessor",
-					"storage",
-					"storage.type",
-					"storage.modifier",
-					"keyword.operator.noexcept",
-					"string.comment.buffered.block.pug",
-					"string.quoted.pug",
-					"string.interpolated.pug",
-					"string.unquoted.plain.in.yaml",
-					"string.unquoted.plain.out.yaml",
-					"string.unquoted.block.yaml",
-					"string.quoted.single.yaml",
-					"string.quoted.double.xml",
-					"string.quoted.single.xml",
-					"string.unquoted.cdata.xml",
-					"string.quoted.double.html",
-					"string.quoted.single.html",
-					"string.unquoted.html",
-					"string.quoted.single.handlebars",
-					"string.quoted.double.handlebars",
-					"punctuation.definition.template-expression.begin",
-					"punctuation.definition.template-expression.end",
-					"punctuation.section.embedded",
-					"keyword",
-					"keyword.operator.new",
-					"keyword.operator.expression",
-					"keyword.operator.cast",
-					"keyword.operator.sizeof",
-					"keyword.operator.alignof",
-					"keyword.operator.typeid",
-					"keyword.operator.alignas",
-					"keyword.operator.instanceof",
-					"keyword.operator.logical.python",
-					"keyword.operator.wordlike",
-					"variable.language",
-					"constant.character",
-					"constant.other.option"
-				],
-				"settings": { "foreground": "#254cba" }
-			},
-			{
-				"name": "Numbers, enum values, units",
-				"scope": [
-					"constant.numeric",
-					"keyword.operator.plus.exponent",
-					"keyword.operator.minus.exponent",
-					"markup.inserted",
-					"meta.preprocessor.numeric",
-					"keyword.other.unit",
-					"constant.sha.git-rebase"
-				],
-				"settings": { "foreground": "#3a7234" }
-			},
-			{
-				"name": "Tags, regex, CSS selectors",
-				"scope": [
-					"constant.regexp",
-					"entity.name.tag",
-					"entity.name.selector",
-					"entity.other.attribute-name.class.css",
-					"source.css entity.other.attribute-name.class",
-					"entity.other.attribute-name.id.css",
-					"entity.other.attribute-name.parent-selector.css",
-					"entity.other.attribute-name.parent.less",
-					"source.css entity.other.attribute-name.pseudo-class",
-					"entity.other.attribute-name.pseudo-element.css",
-					"source.css.less entity.other.attribute-name.id",
-					"entity.other.attribute-name.scss",
-					"markup.heading",
-					"markup.inline.raw",
-					"punctuation.definition.tag",
-					"string.regexp",
-					"punctuation.section.embedded.begin.php",
-					"punctuation.section.embedded.end.php",
-					"constant.character.character-class.regexp",
-					"constant.other.character-class.set.regexp",
-					"constant.other.character-class.regexp",
-					"constant.character.set.regexp"
-				],
-				"settings": { "foreground": "#85253a" }
-			},
-			{
-				"name": "Attributes, CSS properties, escapes, invalid",
-				"scope": [
-					"entity.other.attribute-name",
-					"invalid",
-					"support.type.vendored.property-name",
-					"support.type.property-name",
-					"source.css variable",
-					"source.coffee.embedded",
-					"keyword.operator.or.regexp",
-					"keyword.control.anchor.regexp",
-					"constant.character.escape"
-				],
-				"settings": { "foreground": "#be2e31" }
-			},
-			{
-				"name": "Strings, regex groups",
-				"scope": [
-					"markup.deleted",
-					"meta.preprocessor.string",
-					"string",
-					"meta.embedded.assembly",
-					"punctuation.definition.group.regexp",
-					"punctuation.definition.group.assertion.regexp",
-					"punctuation.definition.character-class.regexp",
-					"punctuation.character.set.begin.regexp",
-					"punctuation.character.set.end.regexp",
-					"keyword.operator.negation.regexp",
-					"support.other.parenthesis.regexp"
-				],
-				"settings": { "foreground": "#8b3f03" }
-			},
-			{
-				"name": "Constants, enum members, JSON keys, CSS values",
-				"scope": [
-					"markup.changed",
-					"punctuation.definition.quote.begin.markdown",
-					"punctuation.definition.list.begin.markdown",
-					"meta.structure.dictionary.key.python",
-					"support.type.property-name.json",
-					"support.function.git-rebase",
-					"variable.other.constant",
-					"variable.other.enummember",
-					"support.constant.property-value",
-					"support.constant.font-name",
-					"support.constant.media-type",
-					"support.constant.media",
-					"constant.other.color.rgb-value",
-					"constant.other.rgb-value",
-					"support.constant.color"
-				],
-				"settings": { "foreground": "#005078" }
-			},
-			{
-				"name": "Functions",
-				"scope": [
-					"entity.name.function",
-					"support.function",
-					"support.constant.handlebars",
-					"source.powershell variable.other.member",
-					"entity.name.operator.custom-literal"
-				],
-				"settings": { "foreground": "#6f5c01" }
-			},
-			{
-				"name": "Types, classes, namespaces",
-				"scope": [
-					"support.class",
-					"support.type",
-					"entity.name.type",
-					"entity.name.namespace",
-					"entity.other.attribute",
-					"entity.name.scope-resolution",
-					"entity.name.class",
-					"storage.type.numeric.go",
-					"storage.type.byte.go",
-					"storage.type.boolean.go",
-					"storage.type.string.go",
-					"storage.type.uintptr.go",
-					"storage.type.error.go",
-					"storage.type.rune.go",
-					"storage.type.cs",
-					"storage.type.generic.cs",
-					"storage.type.modifier.cs",
-					"storage.type.variable.cs",
-					"storage.type.annotation.java",
-					"storage.type.generic.java",
-					"storage.type.java",
-					"storage.type.object.array.java",
-					"storage.type.primitive.array.java",
-					"storage.type.primitive.java",
-					"storage.type.token.java",
-					"storage.type.groovy",
-					"storage.type.annotation.groovy",
-					"storage.type.parameters.groovy",
-					"storage.type.generic.groovy",
-					"storage.type.object.array.groovy",
-					"storage.type.primitive.array.groovy",
-					"storage.type.primitive.groovy",
-					"meta.type.cast.expr",
-					"meta.type.new.expr",
-					"support.constant.math",
-					"support.constant.dom",
-					"support.constant.json",
-					"entity.other.inherited-class",
-					"punctuation.separator.namespace.ruby"
-				],
-				"settings": { "foreground": "#047079" }
-			},
-			{
-				"name": "Control flow, import/export",
-				"scope": [
-					"keyword.control",
-					"source.cpp keyword.operator.new",
-					"source.cpp keyword.operator.delete",
-					"keyword.other.using",
-					"keyword.other.directive.using",
-					"keyword.other.operator",
-					"entity.name.operator"
-				],
-				"settings": { "foreground": "#953490" }
-			}
-		]
-	}
-};
-
-//#endregion
-//#region src/backend/themes/theme-sources.ts
-const BUNDLED_FAMILIES = Object.values([]);
-/** Kepler's own syntax palette, which a theme naming no Shiki theme draws code in. */
-const KEPLER_SYNTAX = kepler_syntax_default;
-let palettes;
-/** The built-in palettes as the stylesheet declares them, parsed on first use. */
-function builtInThemePalettes() {
-	palettes ??= builtInPalettes(_kepler_palette_css_default);
-	return palettes;
-}
-let bundledIds;
-/** The ids of the themes that ship with Kepler as family files. */
-function bundledThemeIds() {
-	bundledIds ??= new Set(BUNDLED_FAMILIES.flatMap((raw) => parseThemeFamily(raw).family?.themes.map((t) => t.id) ?? []));
-	return bundledIds;
-}
-
-//#endregion
 //#region src/backend/themes/validate-theme.ts
 function noticeMessage(notice) {
 	switch (notice.kind) {
@@ -8184,16 +8356,6 @@ function contrastHint(label, min) {
 function roundRatio(ratio) {
 	return Math.round(ratio * 100) / 100;
 }
-/** The theme in the form the contrast checks read: canonical colors, hex terminal and syntax. */
-function contrastDefinition(theme) {
-	return {
-		id: theme.id,
-		extends: theme.base,
-		colors: theme.vars,
-		...theme.terminal && { terminal: theme.terminal },
-		...theme.syntax && { syntax: theme.syntax }
-	};
-}
 /** Every contrast check of the theme against this build's palettes, and how far the thumb stands from its track. */
 function measureThemeContrast(theme, palettes = builtInThemePalettes()) {
 	const [entry] = dataThemes([{ themes: [contrastDefinition(theme)] }], palettes, KEPLER_SYNTAX);
@@ -8205,12 +8367,11 @@ function measureThemeContrast(theme, palettes = builtInThemePalettes()) {
 	};
 }
 /**
-* Checks a theme family file the way the themes folder loads it, then measures
-* every theme that resolved against the same contrast floors the built-in
-* themes are held to. Never throws: a file that is not JSON or not a theme
-* family is reported in `errors`.
+* `validateThemeFamily` with the themes it resolved, for a caller that reads
+* more of them than the result's DTO carries. `themes` holds the same themes as
+* the result's, in its order.
 */
-function validateThemeFamily(text, { file = "theme.json", takenIds }) {
+function inspectThemeFamily(text, { file = "theme.json", takenIds }) {
 	const parsed = parseFamily(file, text.replace(/^\uFEFF/, ""));
 	const errors = parsed.errors.map(({ message, line, column, themeId }) => {
 		const hint = problemHint(message);
@@ -8282,12 +8443,15 @@ function validateThemeFamily(text, { file = "theme.json", takenIds }) {
 		});
 	}
 	return {
-		ok: errors.length === 0 && idClashes.length === 0 && themes.every((theme) => theme.contrast.failures.length === 0),
-		formatVersion: 1,
-		errors,
-		notices,
-		themes,
-		idClashes
+		result: {
+			ok: errors.length === 0 && idClashes.length === 0 && themes.every((theme) => theme.contrast.failures.length === 0),
+			formatVersion: 1,
+			errors,
+			notices,
+			themes,
+			idClashes
+		},
+		themes: resolved
 	};
 }
 
@@ -8295,17 +8459,23 @@ function validateThemeFamily(text, { file = "theme.json", takenIds }) {
 //#region src/backend/themes/theme-check-entry.ts
 const version = "0.13.0";
 function checkThemeFamily(text) {
-	const result = validateThemeFamily(text, { takenIds: /* @__PURE__ */ new Map() });
+	const { result, themes: resolved } = inspectThemeFamily(text, { takenIds: /* @__PURE__ */ new Map() });
+	const palettes = builtInThemePalettes();
 	const errors = result.errors.map(({ message }) => ({ message }));
 	const notices = result.notices.map(({ message }) => ({ message }));
-	const themes = result.themes.map((theme) => ({
-		id: theme.id,
-		contrastFailures: theme.contrast.failures.map(({ label, ratio, min }) => ({
-			label,
-			ratio,
-			min
-		}))
-	}));
+	const themes = result.themes.map((theme) => {
+		const source = resolved.find(({ id }) => id === theme.id);
+		const preview = source && deriveThemePreview(source, palettes, KEPLER_SYNTAX);
+		return {
+			id: theme.id,
+			contrastFailures: theme.contrast.failures.map(({ label, ratio, min }) => ({
+				label,
+				ratio,
+				min
+			})),
+			...preview && { preview }
+		};
+	});
 	const reservedIds = result.idClashes.filter((clash) => clash.owner === BUILT_IN_THEME_OWNER).map((clash) => clash.themeId);
 	return {
 		ok: errors.length === 0 && notices.length === 0 && reservedIds.length === 0 && themes.every((theme) => theme.contrastFailures.length === 0),

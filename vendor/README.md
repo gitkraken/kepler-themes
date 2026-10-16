@@ -17,7 +17,16 @@ export const version = '1.42.0'; // the Kepler release whose palettes it checks 
  *   ok: boolean,
  *   errors: { message: string }[],
  *   notices: { message: string }[],
- *   themes: { id: string, contrastFailures: { label: string, ratio: number, min: number }[] }[],
+ *   themes: {
+ *     id: string,
+ *     contrastFailures: { label: string, ratio: number, min: number }[],
+ *     preview: {
+ *       polarity: 'dark' | 'light',
+ *       colors: { canvas, sunken, raised, ink, text, muted, edge, selected, selectedInk, brand, fill, onFill },
+ *       terminal: { background, foreground, ansi: string[16] },
+ *       syntax: { text, keyword, control, function, type, string, number, variable, comment },
+ *     }, // every color is a '#rrggbb' string
+ *   }[],
  *   reservedIds: string[],
  * }> | {...same...}}
  */
@@ -26,6 +35,7 @@ export function checkThemeFamily(text) {}
 
 - `errors` are anything that stops the file from loading. `notices` are the things the app only warns about (unknown keys, renamed tokens, a newer format).
 - `themes` lists each theme that parsed, with every contrast check it fails against that release's palettes (terminal ANSI and syntax included).
+- `preview` is the theme as Kepler resolves it, in the few colors the gallery's page needs to paint a Kepler window, a planet and a color strip in the theme's own look. The page checks every value against `#rrggbb` and drops a theme's preview if any is off. An older bundle without `preview` still works: the page lists those themes without painting them. Previews are not written to the published index.
 - `reservedIds` are the theme ids in the file that clash with Kepler's built-in or bundled themes.
 - The gallery fails on any error, any notice, any contrast failure and any reserved id.
 - `version` ends up in the published index as `checkedWith`.
