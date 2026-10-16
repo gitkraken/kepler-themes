@@ -23,7 +23,7 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md). In short: put a folder in `themes/`, ru
 - `scripts/check.mjs` is the gate every pull request passes. In CI it runs from the base branch, not from the pull request. The gallery team reviews and merges every pull request.
 - `scripts/build-index.mjs` builds `dist/v1/index.json`, plus a page at the site's root that lists the families in their own colors, which the publish workflow deploys to GitHub Pages when a change lands on `main`. The page is generated with preview colors taken from Kepler's validator, and those colors never go into the index.
 - `site/` holds the page's static files: its styles and script, Kep (the mascot), the logo and the fonts. The fonts are under the SIL Open Font License; the license texts sit next to them in `site/fonts/`.
-- `vendor/kepler-theme-check.mjs` is Kepler's own validator, committed here by Kepler's release job. See [vendor/README.md](vendor/README.md).
+- `vendor/kepler-theme-check.mjs` is Kepler's own validator, committed here by pull request whenever Kepler's theme rules change. See [vendor/README.md](vendor/README.md).
 
 Maintainers: the repository settings this gallery's safety depends on are listed in [MAINTAINING.md](MAINTAINING.md).
 
