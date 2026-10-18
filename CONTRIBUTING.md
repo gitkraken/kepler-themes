@@ -62,7 +62,7 @@ If your theme is a port of another theme, the original's license must allow the 
 
 ## Names and ids
 
-- A family or theme name may not contain "Kepler" or "GitKraken", in any case. Those names belong to the products.
+- A family or theme name may not contain "Kepler" or "GitKraken", in any case. Those names belong to the products. First-party families, which the gallery team lists in `first-party.json`, are exempt. Only the gallery team adds to that list.
 - Do not name a theme after another project without that project's okay. Catppuccin, Dracula and Nord each maintain official ports for the apps they support. A community port of one of them needs its maintainers' okay, or a different name.
 - No offensive names or descriptions.
 - Every theme id must be unique across the whole gallery and must not clash with a theme built into Kepler. The check reports a clash.
@@ -88,6 +88,6 @@ A family leaves the gallery when its maintainer asks, when a license or trademar
 
 Layout, formatting, size, the required fields and the license list, the version rule, unique ids, reserved names, `gallery.json`, the limits the Kepler app puts on the published index (500 families, 8 MB), and files that are too big or not regular files. When Kepler's own validator is present in `vendor/`, it also checks the file against Kepler's schema (no errors and no notices) and the contrast of every color pair. Without it, those checks are skipped locally with a warning, and fail in CI.
 
-The report also has a Review notes section for the maintainer and theme id points above, and a Scope section. Neither fails the check. Scope flags a change to files outside `themes/`, which the gallery team reviews as code because CI runs the tooling from `main`, not from your pull request.
+The report also has a Review notes section for the maintainer, theme id and first-party points above, and a Scope section. Neither fails the check. Scope flags a change to files outside `themes/`, which the gallery team reviews as code because CI runs the tooling from `main`, not from your pull request.
 
 Later phases will add a preview image on each pull request and a nightly re-check against Kepler's next palettes.
