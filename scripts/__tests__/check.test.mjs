@@ -149,6 +149,41 @@ test('a gallery file that is not a regular file fails the gate', async () => {
   assert.deepEqual(problemsOf(report, 'linked', 'Gallery data'), []);
 });
 
+test('first-party families may use the product names, others may not', async () => {
+  const family = validFamily({ name: 'Kepler Blue', themes: [{ id: 'one-dark', name: 'GitKraken Dark', extends: 'dark' }] });
+  const families = { one: { family } };
+  const unlisted = await run(makeGallery(families));
+  assert.equal(problemsOf(unlisted, 'one', 'Names').length, 2);
+  const listed = await run(makeGallery(families, { firstParty: ['one'] }));
+  assert.deepEqual(problemsOf(listed, 'one', 'Names'), []);
+});
+
+test('a family newly listed in first-party.json is a review note, not a failure', async () => {
+  const root = makeGallery(
+    {
+      one: { family: validFamily({ name: 'Kepler Blue', themes: [{ id: 'one-dark', name: 'D', extends: 'dark' }] }) },
+      two: {},
+    },
+    { firstParty: ['one', 'two'] },
+  );
+  const report = await run(root, {
+    base: 'origin/main',
+    readBase: (path) => (path === 'first-party.json' ? JSON.stringify(['two']) : null),
+    baseSlugs: [],
+  });
+  assert.equal(report.failed, false, renderText(report));
+  assert.deepEqual(report.review.map((r) => r.slug), ['one'], 'a family already first-party on the base needs no note');
+  assert.match(plain(report.review[0].notes[0]), /first-party\.json newly lists this family/);
+});
+
+test('first-party.json must list existing folders, once each', async () => {
+  const report = await run(makeGallery({ example: {} }, { firstParty: ['ghost', 'example', 'example'] }));
+  const problems = globalProblemsOf(report, 'Gallery lists');
+  assert.ok(problems.includes('first-party.json lists "ghost", which has no folder.'), problems.join('\n'));
+  assert.ok(problems.includes('first-party.json repeats a slug.'), problems.join('\n'));
+  assert.equal(problems.length, 2);
+});
+
 test('a list file over 1 MB fails the gate', async () => {
   const root = makeGallery({ example: {} });
   writeFileSync(join(root, 'featured.json'), formatJson(['x'.repeat(1_100_000)]));

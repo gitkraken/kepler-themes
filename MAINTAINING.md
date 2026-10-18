@@ -25,6 +25,7 @@ The gate (`check` in `.github/workflows/check.yml`) judges a pull request with t
 - A pull request that touches `.github/`: its status and report are untrusted. Read the diff as code.
 - A pull request that changes `scripts/` or `vendor/`: the `tooling tests` job must be green before you merge. It is the only job that runs the new tooling over every family, so a stricter validator that breaks a published family would otherwise break publishing after the merge.
 - A change to a family: the report's Review notes section lists the family's maintainers from `main` and says whether the author is one of them. If not, a listed maintainer must agree in the pull request before you merge.
+- A change to `first-party.json` grants a family the product names "Kepler" and "GitKraken". The gate reads that list from the pull request, so it passes such a change; the report's Review notes section names each family it newly lists. Only GitKraken's own families belong there.
 - Removing a family needs its slug in `withdrawn.json`. Removing theme ids is flagged: people who use them keep their installed copy but lose updates.
 
 ## Why

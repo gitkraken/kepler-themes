@@ -95,9 +95,9 @@ function themesOf(f) {
   return family && Array.isArray(family.themes) ? family.themes.filter(isRecord) : [];
 }
 
-function nameProblems(f) {
+function nameProblems(f, firstParty) {
   const family = parsedFamily(f);
-  if (!family) return [];
+  if (!family || firstParty.includes(f.slug)) return [];
   const names = [
     ['Family name', family.name],
     ...themesOf(f).map((t) => [`Theme name for "${mark(String(t.id))}"`, t.name]),
@@ -239,6 +239,15 @@ function parseBaseJson(text) {
   }
 }
 
+/** A list file of family slugs must name existing folders, each once. */
+function slugListProblems(file, list, slugs) {
+  const problems = list
+    .filter((slug) => !slugs.has(slug))
+    .map((slug) => `${file} lists "${mark(slug)}", which has no folder.`);
+  if (new Set(list).size !== list.length) problems.push(`${file} repeats a slug.`);
+  return problems;
+}
+
 function themeIdsOf(family) {
   return isRecord(family) && Array.isArray(family.themes)
     ? family.themes.filter(isRecord).map((t) => t.id).filter((id) => typeof id === 'string')
@@ -257,12 +266,25 @@ function removedFamilyProblems(families, baseSlugs, withdrawn) {
 
 /**
  * Things a reviewer should weigh that are not failures: who may speak for each changed family,
- * and theme ids a change takes away. Returns [{ slug, notes }] sorted by slug.
+ * theme ids a change takes away, and families a change newly makes first-party.
+ * Returns [{ slug, notes }] sorted by slug.
  */
-function reviewNotes({ families, baseSlugs, readBase, author, changedFiles }) {
+function reviewNotes({ families, baseSlugs, readBase, author, changedFiles, firstParty }) {
   const bySlug = new Map();
   const add = (slug, note) => bySlug.set(slug, [...(bySlug.get(slug) ?? []), note]);
   const onBase = new Set(baseSlugs);
+
+  // The gate reads first-party.json from the pull request, so a change can grant itself the
+  // product names; a newly granted slug is surfaced for the gallery team to confirm.
+  const baseFirstParty = parseBaseJson(readBase('first-party.json'));
+  const granted = new Set(Array.isArray(baseFirstParty) ? baseFirstParty : []);
+  for (const slug of new Set(firstParty)) {
+    if (granted.has(slug)) continue;
+    add(
+      slug,
+      'first-party.json newly lists this family, which lets it use the names "Kepler" and "GitKraken". Only GitKraken\'s own families belong there.',
+    );
+  }
 
   if (author !== null && changedFiles !== null) {
     const changed = new Set(
@@ -361,7 +383,7 @@ export async function runChecks({
         name: 'Version',
         problems: versionProblems(f, base === null ? null : readBase(`themes/${f.slug}/${f.slug}.json`)),
       },
-      { name: 'Names', problems: nameProblems(f) },
+      { name: 'Names', problems: nameProblems(f, lists.firstParty) },
       { name: 'Ids', problems: idProblems(f, idOwners, lists.withdrawn) },
       { name: 'Gallery data', problems: galleryDataProblems(f, lists.tags) },
     ];
@@ -374,12 +396,12 @@ export async function runChecks({
     name: 'Gallery folders',
     problems: strays.map((s) => `themes/${mark(s)} is not a family folder; themes/ holds only folders.`),
   });
-  const listProblems = [...lists.problems];
   const slugs = new Set(families.map((f) => f.slug));
-  for (const slug of lists.featured) {
-    if (!slugs.has(slug)) listProblems.push(`featured.json lists "${mark(slug)}", which has no folder.`);
-  }
-  if (new Set(lists.featured).size !== lists.featured.length) listProblems.push('featured.json repeats a slug.');
+  const listProblems = [
+    ...lists.problems,
+    ...slugListProblems('featured.json', lists.featured, slugs),
+    ...slugListProblems('first-party.json', lists.firstParty, slugs),
+  ];
   global.push({ name: 'Gallery lists', problems: listProblems });
   global.push({ name: 'Index size', problems: treeLimitProblems(families) });
   if (base !== null && baseSlugs !== null) {
@@ -394,7 +416,7 @@ export async function runChecks({
 
   const review =
     base !== null && baseSlugs !== null
-      ? reviewNotes({ families, baseSlugs, readBase, author, changedFiles })
+      ? reviewNotes({ families, baseSlugs, readBase, author, changedFiles, firstParty: lists.firstParty })
       : [];
   const scope = scopeOf(changedFiles);
 

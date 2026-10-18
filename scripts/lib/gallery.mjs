@@ -191,26 +191,28 @@ export function fixFormatting(root) {
   return changed;
 }
 
-/** `featured.json`, `withdrawn.json` and `tags.json`, each an array of strings. */
+/** `featured.json`, `withdrawn.json`, `first-party.json` and `tags.json`, each an array of strings. */
 export function loadLists(root) {
   const problems = [];
   const lists = {};
-  for (const name of ['featured', 'withdrawn', 'tags']) {
+  for (const [name, key] of [
+    ['featured', 'featured'],
+    ['withdrawn', 'withdrawn'],
+    ['first-party', 'firstParty'],
+    ['tags', 'tags'],
+  ]) {
     const file = readJson(join(root, `${name}.json`));
+    lists[key] = [];
     if (file.missing) {
       problems.push(`${name}.json is missing.`);
-      lists[name] = [];
     } else if (file.unreadable) {
       problems.push(`${name}.json cannot be read: ${file.unreadable}.`);
-      lists[name] = [];
     } else if (file.error) {
       problems.push(`${name}.json is not valid JSON: ${mark(file.error)}`);
-      lists[name] = [];
     } else if (!Array.isArray(file.value) || !file.value.every((v) => typeof v === 'string')) {
       problems.push(`${name}.json must be an array of strings.`);
-      lists[name] = [];
     } else {
-      lists[name] = file.value;
+      lists[key] = file.value;
     }
   }
   return { ...lists, problems };

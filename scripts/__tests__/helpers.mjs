@@ -17,7 +17,7 @@ export function validFamily(overrides = {}) {
 }
 
 /** Writes a gallery under a fresh temp dir: { slug: { family, gallery, extra } }. */
-export function makeGallery(families = {}, { featured = [], withdrawn = [] } = {}) {
+export function makeGallery(families = {}, { featured = [], withdrawn = [], firstParty = [] } = {}) {
   const root = mkdtempSync(join(tmpdir(), 'kepler-themes-'));
   mkdirSync(join(root, 'themes'));
   for (const [slug, spec] of Object.entries(families)) {
@@ -30,6 +30,7 @@ export function makeGallery(families = {}, { featured = [], withdrawn = [] } = {
   }
   writeFileSync(join(root, 'featured.json'), formatJson(featured));
   writeFileSync(join(root, 'withdrawn.json'), formatJson(withdrawn));
+  writeFileSync(join(root, 'first-party.json'), formatJson(firstParty));
   writeFileSync(join(root, 'tags.json'), formatJson(['blue', 'purple', 'vivid']));
   return root;
 }
