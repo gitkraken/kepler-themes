@@ -1,0 +1,61 @@
+{
+  "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
+  "schemaVersion": 1,
+  "name": "Kepler Sky",
+  "version": "1.0.0",
+  "author": "GitKraken",
+  "description": "The quiet sky of Kep's onboarding: a teal-blue night and a soft daylight, with teal edges, tinted buttons and Kepler's teal accent.",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "kepler-sky-night",
+      "name": "Night",
+      "extends": "midnight",
+      "colors": {
+        "surface-sunken": "oklch(0.132 0.023 205)",
+        "surface-canvas": "oklch(0.155 0.026 205)",
+        "surface-raised": "oklch(0.205 0.03 192)",
+        "surface-overlay": "oklch(0.24 0.032 190)",
+        "ink": "oklch(0.955 0.017 190)",
+        "brand": "oklch(0.71 0.1 178.8)",
+        "brand-hover": "oklch(0.76 0.1 178.8)",
+        "brand-fill": "oklch(0.66 0.099 178.8)",
+        "brand-fill-hover": "oklch(0.7 0.1 178.8)",
+        "brand-fill-active": "oklch(0.62 0.095 178.8)",
+        "fill-subtle": "oklch(0.81 0.095 182 / 0.075)",
+        "fill-muted": "oklch(0.81 0.095 182 / 0.122)",
+        "fill-strong": "oklch(0.81 0.095 182 / 0.18)",
+        "edge-subtle": "oklch(0.66 0.099 178.8 / 0.2)",
+        "edge": "oklch(0.66 0.099 178.8 / 0.38)",
+        "edge-strong": "oklch(0.66 0.099 178.8 / 0.75)",
+        "edge-decor": "oklch(0.66 0.099 178.8 / 0.48)",
+        "selected-bg": 0.25,
+        "selected-border": 0.64,
+        "selected-ink": "oklch(0.82 0.1 178.8)"
+      }
+    },
+    {
+      "id": "kepler-sky-day",
+      "name": "Day",
+      "extends": "light",
+      "colors": {
+        "surface-sunken": "oklch(0.928 0.021 205)",
+        "surface-canvas": "oklch(0.95 0.018 205)",
+        "surface-raised": "oklch(0.973 0.014 190)",
+        "surface-overlay": "oklch(0.99 0.006 200)",
+        "ink": "oklch(0.215 0.03 215)",
+        "content-subtle": 0.65,
+        "fill-subtle": "oklch(0.45 0.1 182 / 0.078)",
+        "fill-muted": "oklch(0.45 0.1 182 / 0.125)",
+        "fill-strong": "oklch(0.45 0.1 182 / 0.175)",
+        "edge-subtle": "oklch(0.45 0.098 178.2 / 0.175)",
+        "edge": "oklch(0.45 0.098 178.2 / 0.33)",
+        "edge-strong": "oklch(0.45 0.098 178.2 / 0.72)",
+        "edge-decor": "oklch(0.45 0.098 178.2 / 0.44)",
+        "selected-bg": 0.2,
+        "selected-border": 0.65,
+        "selected-ink": "oklch(0.36 0.09 178.2)"
+      }
+    }
+  ]
+}
