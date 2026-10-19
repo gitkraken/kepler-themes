@@ -1,0 +1,53 @@
+{
+  "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
+  "schemaVersion": 1,
+  "name": "Blue Is the New Green",
+  "version": "1.0.0",
+  "author": "Alejandro Such",
+  "description": "Dark and light themes for red-green colour blindness: success turns blue, danger turns vermilion, and statuses and graph lanes differ in lightness too.",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "blue-is-the-new-green-dark",
+      "name": "Blue Is the New Green Dark",
+      "extends": "dark",
+      "colors": {
+        "status-success": "oklch(0.836 0.085 246.8)",
+        "status-info": "oklch(0.930 0.080 190.0)",
+        "status-warning": "oklch(0.783 0.160 90.9)",
+        "status-attention": "oklch(0.883 0.080 69.4)",
+        "status-danger": "oklch(0.743 0.082 22.0)",
+        "status-merged": "oklch(0.720 0.158 291.7)",
+        "lane-1": "oklch(0.662 0.180 276.2)",
+        "lane-2": "oklch(0.757 0.127 237.1)",
+        "lane-3": "oklch(0.891 0.136 169.7)",
+        "lane-4": "oklch(0.840 0.092 79.4)",
+        "lane-5": "oklch(0.681 0.070 203.8)",
+        "lane-6": "oklch(0.930 0.066 205.0)",
+        "lane-7": "oklch(0.780 0.169 69.7)",
+        "lane-8": "oklch(0.707 0.185 15.5)"
+      }
+    },
+    {
+      "id": "blue-is-the-new-green-light",
+      "name": "Blue Is the New Green Light",
+      "extends": "light",
+      "colors": {
+        "status-success": "oklch(0.300 0.136 270.0)",
+        "status-info": "oklch(0.467 0.085 220.0)",
+        "status-warning": "oklch(0.431 0.088 91.0)",
+        "status-attention": "oklch(0.312 0.080 52.5)",
+        "status-danger": "oklch(0.490 0.082 23.1)",
+        "status-merged": "oklch(0.426 0.200 290.3)",
+        "lane-1": "oklch(0.386 0.136 261.6)",
+        "lane-2": "oklch(0.511 0.200 273.7)",
+        "lane-3": "oklch(0.524 0.078 308.6)",
+        "lane-4": "oklch(0.550 0.063 34.1)",
+        "lane-5": "oklch(0.449 0.091 77.4)",
+        "lane-6": "oklch(0.334 0.060 152.6)",
+        "lane-7": "oklch(0.300 0.095 325.9)",
+        "lane-8": "oklch(0.418 0.061 341.7)"
+      }
+    }
+  ]
+}
