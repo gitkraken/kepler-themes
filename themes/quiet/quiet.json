@@ -153,7 +153,6 @@
               "constant.numeric",
               "keyword.operator.plus.exponent",
               "keyword.operator.minus.exponent",
-              "markup.inserted",
               "meta.preprocessor.numeric",
               "keyword.other.unit",
               "constant.sha.git-rebase"
@@ -163,7 +162,7 @@
             }
           },
           {
-            "name": "Regex, escapes, CSS selectors, invalid",
+            "name": "Regex, escapes, CSS selectors",
             "scope": [
               "constant.regexp",
               "entity.name.tag.css",
@@ -177,7 +176,6 @@
               "entity.other.attribute-name.pseudo-element.css",
               "source.css.less entity.other.attribute-name.id",
               "entity.other.attribute-name.scss",
-              "invalid",
               "string.regexp",
               "constant.character.character-class.regexp",
               "constant.other.character-class.set.regexp",
@@ -214,7 +212,6 @@
           {
             "name": "Strings",
             "scope": [
-              "markup.deleted",
               "markup.inline.raw",
               "meta.preprocessor.string",
               "string",
@@ -334,6 +331,33 @@
             ],
             "settings": {
               "foreground": "#8fb3e0"
+            }
+          },
+          {
+            "name": "Diff: inserted lines",
+            "scope": [
+              "markup.inserted"
+            ],
+            "settings": {
+              "foreground": "#a5c19b"
+            }
+          },
+          {
+            "name": "Diff: deleted lines",
+            "scope": [
+              "markup.deleted"
+            ],
+            "settings": {
+              "foreground": "#d48c8c"
+            }
+          },
+          {
+            "name": "Invalid",
+            "scope": [
+              "invalid"
+            ],
+            "settings": {
+              "foreground": "#d48c8c"
             }
           }
         ]
@@ -466,21 +490,6 @@
               "storage.type",
               "storage.modifier",
               "keyword.operator.noexcept",
-              "string.comment.buffered.block.pug",
-              "string.quoted.pug",
-              "string.interpolated.pug",
-              "string.unquoted.plain.in.yaml",
-              "string.unquoted.plain.out.yaml",
-              "string.unquoted.block.yaml",
-              "string.quoted.single.yaml",
-              "string.quoted.double.xml",
-              "string.quoted.single.xml",
-              "string.unquoted.cdata.xml",
-              "string.quoted.double.html",
-              "string.quoted.single.html",
-              "string.unquoted.html",
-              "string.quoted.single.handlebars",
-              "string.quoted.double.handlebars",
               "punctuation.definition.template-expression.begin",
               "punctuation.definition.template-expression.end",
               "punctuation.section.embedded",
@@ -509,7 +518,6 @@
               "constant.numeric",
               "keyword.operator.plus.exponent",
               "keyword.operator.minus.exponent",
-              "markup.inserted",
               "meta.preprocessor.numeric",
               "keyword.other.unit",
               "constant.sha.git-rebase"
@@ -534,7 +542,6 @@
               "source.css.less entity.other.attribute-name.id",
               "entity.other.attribute-name.scss",
               "markup.heading",
-              "markup.inline.raw",
               "punctuation.definition.tag",
               "string.regexp",
               "punctuation.section.embedded.begin.php",
@@ -549,12 +556,12 @@
             }
           },
           {
-            "name": "Attributes, CSS properties, escapes, invalid",
+            "name": "Attributes, properties, JSON keys, escapes",
             "scope": [
               "entity.other.attribute-name",
-              "invalid",
               "support.type.vendored.property-name",
               "support.type.property-name",
+              "support.type.property-name.json",
               "source.css variable",
               "source.coffee.embedded",
               "keyword.operator.or.regexp",
@@ -568,9 +575,24 @@
           {
             "name": "Strings, regex groups",
             "scope": [
-              "markup.deleted",
+              "markup.inline.raw",
               "meta.preprocessor.string",
               "string",
+              "string.comment.buffered.block.pug",
+              "string.quoted.pug",
+              "string.interpolated.pug",
+              "string.unquoted.plain.in.yaml",
+              "string.unquoted.plain.out.yaml",
+              "string.unquoted.block.yaml",
+              "string.quoted.single.yaml",
+              "string.quoted.double.xml",
+              "string.quoted.single.xml",
+              "string.unquoted.cdata.xml",
+              "string.quoted.double.html",
+              "string.quoted.single.html",
+              "string.unquoted.html",
+              "string.quoted.single.handlebars",
+              "string.quoted.double.handlebars",
               "meta.embedded.assembly",
               "punctuation.definition.group.regexp",
               "punctuation.definition.group.assertion.regexp",
@@ -585,13 +607,12 @@
             }
           },
           {
-            "name": "Constants, enum members, JSON keys, CSS values",
+            "name": "Constants, enum members, CSS values",
             "scope": [
               "markup.changed",
               "punctuation.definition.quote.begin.markdown",
               "punctuation.definition.list.begin.markdown",
               "meta.structure.dictionary.key.python",
-              "support.type.property-name.json",
               "support.function.git-rebase",
               "variable.other.constant",
               "variable.other.enummember",
@@ -680,6 +701,33 @@
             ],
             "settings": {
               "foreground": "#2c5a96"
+            }
+          },
+          {
+            "name": "Diff: inserted lines",
+            "scope": [
+              "markup.inserted"
+            ],
+            "settings": {
+              "foreground": "#3f6a36"
+            }
+          },
+          {
+            "name": "Diff: deleted lines",
+            "scope": [
+              "markup.deleted"
+            ],
+            "settings": {
+              "foreground": "#983c3c"
+            }
+          },
+          {
+            "name": "Invalid",
+            "scope": [
+              "invalid"
+            ],
+            "settings": {
+              "foreground": "#983c3c"
             }
           }
         ]
