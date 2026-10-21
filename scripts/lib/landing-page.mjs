@@ -160,7 +160,9 @@ export function renderLandingPage(index, previews = {}) {
   const data = {
     families: ordered.map(({ entry, themes }) => ({
       slug: entry.slug,
-      themes: themes.map((t) => ({ id: t.id, name: t.name, preview: t.preview })),
+      name: typeof entry.name === 'string' ? entry.name : entry.slug,
+      tags: Array.isArray(entry.tags) ? entry.tags.filter((t) => typeof t === 'string') : [],
+      themes: themes.map((t) => ({ id: t.id, name: t.name, polarity: polarityOf(t), preview: t.preview })),
     })),
     hero: heroThemes(ordered),
   };
@@ -232,6 +234,16 @@ export function renderLandingPage(index, previews = {}) {
             </div>
             <p class="tally"><b>${ordered.length}</b> ${ordered.length === 1 ? 'family' : 'families'}, <b>${themeCount}</b> ${themeCount === 1 ? 'theme' : 'themes'}${checked ? `<br>checked with Kepler ${escapeHtml(checked)}` : ''}</p>
           </div>
+          <div class="filters" role="search" aria-label="Themes" hidden>
+            <input type="search" id="find" placeholder="Search by name or tag" aria-label="Search themes by name or tag" autocomplete="off" spellcheck="false">
+            <div class="seg" role="group" aria-label="Show">
+              <button type="button" aria-pressed="true" data-polarity="">All</button>
+              <button type="button" aria-pressed="false" data-polarity="dark">Dark</button>
+              <button type="button" aria-pressed="false" data-polarity="light">Light</button>
+            </div>
+            <p class="count" aria-live="polite"></p>
+          </div>
+          <p class="none" hidden>No themes match. <button type="button">Clear the search</button></p>
           <div class="catalog">
 ${ordered.map((e, i) => `${entryHtml(e, i + 1)}\n\n`).join('')}          <article class="entry vacant" aria-labelledby="t-vacant">
             <div id="vacant-kep" data-state="listening"></div>

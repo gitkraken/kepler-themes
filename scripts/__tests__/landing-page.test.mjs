@@ -256,3 +256,14 @@ test('a visitor without Kepler is told what it is and where to download it', () 
   assert.ok(html.includes('<meta property="og:title" content="Kepler Themes">'));
   assert.ok(html.includes(`<meta property="og:url" content="${SITE_URL}">`));
 });
+
+test('the data block carries what the catalog search and filter need', () => {
+  const families = [entry('a', '2026-01-01', { name: 'Aurora', tags: ['green', 'cool'] })];
+  families[0].family.themes.push({ id: 'a-light', name: 'a Light', extends: 'light' });
+  const html = renderLandingPage(index(families), { a: { 'a-dark': preview('dark') } });
+  const [family] = JSON.parse(dataBlock(html)).families;
+  assert.equal(family.name, 'Aurora');
+  assert.deepEqual(family.tags, ['green', 'cool']);
+  assert.deepEqual(family.themes.map((t) => t.polarity), ['dark', 'light']);
+  assert.ok(html.includes('<div class="filters" role="search" aria-label="Themes" hidden>'), 'the controls wait for the script');
+});
