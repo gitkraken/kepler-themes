@@ -1,5 +1,5 @@
 // Paints the page from the data block the build writes: each family's Kepler window, planet
-// orb and spectrum, the hero's solar system, the star field and Kep.
+// orb and spectrum, the catalog's search and filter, the hero's solar system, the star field and Kep.
 (function () {
   'use strict';
 
@@ -95,6 +95,9 @@
     return [c.canvas, c.selected, c.fill].concat(a.slice(1, 7), a.slice(9, 15), [s.keyword, s.function, s.string, s.type]);
   }
 
+  // Each card's variant picker, by family slug, so the Dark and Light filter can flip a card to a matching theme.
+  var pickers = {};
+
   document.querySelectorAll('.entry[data-family]').forEach(function (entry) {
     var family = families[entry.dataset.family];
     if (!family) return;
@@ -132,15 +135,72 @@
       bar.innerHTML = colors.map(function (color) { return '<i style="background:' + color + '"></i>'; }).join('');
     }
 
+    var current = 0;
+    function pick(index) {
+      current = index;
+      if (switcher) switcher.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(Number(b.dataset.index) === index)); });
+      show(index);
+    }
+    pickers[family.slug] = { pick: pick, current: function () { return current; } };
+
     show(0);
     if (!switcher) return;
     switcher.addEventListener('click', function (e) {
       var button = e.target.closest('button');
-      if (!button) return;
-      switcher.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
-      show(Number(button.dataset.index));
+      if (button) pick(Number(button.dataset.index));
     });
   });
+
+  // Search by family name, theme name or tag, and show only families with a dark or a light theme.
+  var filters = document.querySelector('.filters');
+  if (filters) {
+    var find = document.getElementById('find');
+    var none = document.querySelector('.none');
+    var count = filters.querySelector('.count');
+    var polaritySeg = filters.querySelector('.seg');
+    var entries = Array.prototype.slice.call(document.querySelectorAll('.entry[data-family]'));
+    var polarity = '';
+
+    var haystack = function (family) {
+      return [family.name].concat(family.tags || [], family.themes.map(function (t) { return t.name; })).join(' ').toLowerCase();
+    };
+
+    var apply = function () {
+      var terms = find.value.toLowerCase().split(/\s+/).filter(Boolean);
+      var shown = 0;
+      entries.forEach(function (entry) {
+        var family = families[entry.dataset.family];
+        if (!family) return;
+        var text = haystack(family);
+        var match = terms.every(function (term) { return text.indexOf(term) !== -1; });
+        var first = polarity ? family.themes.map(function (t) { return t.polarity; }).indexOf(polarity) : 0;
+        entry.hidden = !match || first === -1;
+        if (entry.hidden) return;
+        shown++;
+        // Under Dark or Light, a card showing the other kind switches to its first matching theme.
+        var picker = pickers[family.slug];
+        if (polarity && picker && family.themes[picker.current()].polarity !== polarity) picker.pick(first);
+      });
+      var filtering = terms.length > 0 || polarity !== '';
+      count.textContent = filtering ? 'Showing ' + shown + ' of ' + entries.length + (entries.length === 1 ? ' family' : ' families') : '';
+      none.hidden = !filtering || shown > 0;
+    };
+
+    find.addEventListener('input', apply);
+    polaritySeg.addEventListener('click', function (e) {
+      var button = e.target.closest('button');
+      if (!button) return;
+      polarity = button.dataset.polarity;
+      polaritySeg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
+      apply();
+    });
+    none.querySelector('button').addEventListener('click', function () {
+      find.value = '';
+      polaritySeg.querySelector('button').click();
+      find.focus();
+    });
+    filters.hidden = false;
+  }
 
   // The solar system: each theme rides an orbit, passing behind Kep and in front of it.
   var system = document.getElementById('system');
