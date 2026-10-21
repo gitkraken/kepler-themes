@@ -1,5 +1,8 @@
 export const REPO_URL = 'https://github.com/gitkraken/kepler-themes';
+export const DOWNLOAD_URL = 'https://gitkraken.com/kepler/download';
+export const SITE_URL = 'https://kepler-themes.gitkraken.dev/';
 
+const DESCRIPTION = "Community themes for Kepler, GitKraken's agent-agnostic development environment. Browse themes made with Kepler, install them, or submit your own.";
 const HERO_THEMES = 6;
 const HEX = /^#[0-9a-f]{6}$/i;
 const COLOR_KEYS = ['canvas', 'sunken', 'raised', 'ink', 'text', 'muted', 'edge', 'selected', 'selectedInk', 'brand', 'fill', 'onFill'];
@@ -157,7 +160,9 @@ export function renderLandingPage(index, previews = {}) {
   const data = {
     families: ordered.map(({ entry, themes }) => ({
       slug: entry.slug,
-      themes: themes.map((t) => ({ id: t.id, name: t.name, preview: t.preview })),
+      name: typeof entry.name === 'string' ? entry.name : entry.slug,
+      tags: Array.isArray(entry.tags) ? entry.tags.filter((t) => typeof t === 'string') : [],
+      themes: themes.map((t) => ({ id: t.id, name: t.name, polarity: polarityOf(t), preview: t.preview })),
     })),
     hero: heroThemes(ordered),
   };
@@ -167,8 +172,16 @@ export function renderLandingPage(index, previews = {}) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="Community themes for Kepler, GitKraken's desktop app for agent-driven Git work.">
+  <meta name="description" content="${DESCRIPTION}">
   <title>Kepler Themes</title>
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="${SITE_URL}">
+  <meta property="og:site_name" content="Kepler Themes">
+  <meta property="og:title" content="Kepler Themes">
+  <meta property="og:description" content="${DESCRIPTION}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Kepler Themes">
+  <meta name="twitter:description" content="${DESCRIPTION}">
   <link rel="icon" href="brand/logo.svg" type="image/svg+xml">
   <link rel="stylesheet" href="brand/kep.css">
   <link rel="stylesheet" href="site.css">
@@ -186,6 +199,7 @@ export function renderLandingPage(index, previews = {}) {
         <a href="#launch">Submit a theme</a>
         <a href="${REPO_URL}">GitHub</a>
       </nav>
+      <a class="get" href="${DOWNLOAD_URL}">Get Kepler</a>
     </header>
 
     <main>
@@ -193,12 +207,13 @@ export function renderLandingPage(index, previews = {}) {
         <div class="hero-copy">
           <span class="eyebrow">Community themes for Kepler</span>
           <h1>A whole sky of <span class="lit">color</span> for your workspace.</h1>
-          <p class="lede">Every theme here repaints all of Kepler, from the task list to the terminal, and passes Kepler's own contrast checks before it reaches you.</p>
+          <p class="lede">Kepler is GitKraken's agent-agnostic development environment. Describe a look to your agent, and it builds the theme for Kepler itself. Here's what people have made.</p>
           <div class="ctas">
-            <a class="btn primary" href="#catalog">Explore the catalog</a>
-            <a class="btn ghost" href="#launch">Submit a theme</a>
+            <a class="btn primary" href="${DOWNLOAD_URL}">Build yours in Kepler</a>
+            <a class="btn ghost" href="#catalog">Explore the theme catalog</a>
           </div>
-          <p class="where">Install from Kepler <i>/</i> <b>Settings</b> <i>›</i> <b>Appearance</b> <i>›</i> <b>Add a theme</b> <i>›</i> <b>Browse the gallery</b></p>
+          <p class="submit">Made one you love? <a href="#launch">See how to submit it <span aria-hidden="true">›</span></a></p>
+          <p class="where">Already have Kepler? Open <b>Settings</b> <i>›</i> <b>Appearance</b> <i>›</i> <b>Add a theme</b> <i>›</i> <b>Browse the gallery</b></p>
         </div>
         <div class="system" id="system">
           <svg class="orbits" viewBox="0 0 100 100" aria-hidden="true">
@@ -219,6 +234,16 @@ export function renderLandingPage(index, previews = {}) {
             </div>
             <p class="tally"><b>${ordered.length}</b> ${ordered.length === 1 ? 'family' : 'families'}, <b>${themeCount}</b> ${themeCount === 1 ? 'theme' : 'themes'}${checked ? `<br>checked with Kepler ${escapeHtml(checked)}` : ''}</p>
           </div>
+          <div class="filters" role="search" aria-label="Themes" hidden>
+            <input type="search" id="find" placeholder="Search by name or tag" aria-label="Search themes by name or tag" autocomplete="off" spellcheck="false">
+            <div class="seg" role="group" aria-label="Show">
+              <button type="button" aria-pressed="true" data-polarity="">All</button>
+              <button type="button" aria-pressed="false" data-polarity="dark">Dark</button>
+              <button type="button" aria-pressed="false" data-polarity="light">Light</button>
+            </div>
+            <p class="count" aria-live="polite"></p>
+          </div>
+          <p class="none" hidden>No themes match. <button type="button">Clear the search</button></p>
           <div class="catalog">
 ${ordered.map((e, i) => `${entryHtml(e, i + 1)}\n\n`).join('')}          <article class="entry vacant" aria-labelledby="t-vacant">
             <div id="vacant-kep" data-state="listening"></div>
@@ -241,7 +266,7 @@ ${ordered.map((e, i) => `${entryHtml(e, i + 1)}\n\n`).join('')}          <articl
             <a href="${REPO_URL}/blob/main/CONTRIBUTING.md">Read CONTRIBUTING.md</a>
           </div>
           <ol class="track">
-            <li><span class="t">T−3</span><h3>Make it in Kepler</h3><p>Ask an agent to create a theme, or edit a family file in your themes folder. Kepler repaints as you save.</p></li>
+            <li><span class="t">T−3</span><h3>Make it in Kepler</h3><p>Ask an agent to create a theme, or edit a family file in your themes folder. Kepler repaints as you save. New to Kepler? <a href="${DOWNLOAD_URL}">Download it</a>.</p></li>
             <li><span class="t">T−2</span><h3>Open a pull request</h3><p>Add <code>themes/&lt;slug&gt;/</code> with your family file and a <code>gallery.json</code> that names you as its maintainer.</p></li>
             <li><span class="t">T−1</span><h3>Checks and review</h3><p>Kepler's own validator checks the format and every contrast pair. The gallery team reviews names and licenses.</p></li>
             <li><span class="t">Launch</span><h3>In every Kepler</h3><p>On merge the catalog rebuilds, and your theme appears in Kepler's gallery within the hour.</p></li>
@@ -253,7 +278,7 @@ ${ordered.map((e, i) => `${entryHtml(e, i + 1)}\n\n`).join('')}          <articl
     <footer class="horizon">
       <div class="wrap inner">
         <span class="sleeper"><span id="footer-kep" data-state="asleep"></span>Catalog updated ${escapeHtml(String(index.generatedAt ?? '').slice(0, 10))}${checked ? `, checked with Kepler ${escapeHtml(checked)}` : ''}</span>
-        <span><a href="v1/index.json">Index (JSON)</a></span>
+        <span><a href="${DOWNLOAD_URL}">Download Kepler</a> <i>·</i> <a href="v1/index.json">Index (JSON)</a></span>
       </div>
     </footer>
   </div>
