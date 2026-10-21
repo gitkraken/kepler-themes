@@ -1,0 +1,178 @@
+{
+  "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
+  "schemaVersion": 1,
+  "name": "Third Impact",
+  "version": "1.0.0",
+  "author": "Justin Roberts",
+  "description": "Phosphor green and orange command-screen UI, inspired by Evangelion's MAGI displays.",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "third-impact",
+      "name": "Third Impact",
+      "extends": "midnight",
+      "colors": {
+        "surface-sunken": "#091511",
+        "surface-canvas": "#0d1c17",
+        "surface-raised": "#132720",
+        "surface-overlay": "#1a3229",
+        "ink": "#c6f5dc",
+        "content-strong": "#e0fff0",
+        "content": 0.9,
+        "content-muted": 0.74,
+        "content-subtle": 0.64,
+        "content-on-accent": "#000000",
+        "fill-subtle": 0.05,
+        "fill-muted": 0.09,
+        "fill-strong": 0.14,
+        "edge-subtle": 0.12,
+        "edge": 0.2,
+        "edge-strong": 0.5,
+        "edge-decor": 0.1,
+        "brand": "#ff9a3a",
+        "brand-hover": "#ffb060",
+        "brand-active": "#ff8a1f",
+        "brand-fill": "#ff8a1f",
+        "brand-fill-hover": "#ff9d40",
+        "brand-fill-active": "#e67700",
+        "content-on-brand": "#000000",
+        "ai": "#4dffb4",
+        "ai-hover": "#80ffcc",
+        "selected-bg": 0.16,
+        "selected-border": 0.6,
+        "selected-ink": "#ffbf80",
+        "focus-ring": 0.85,
+        "status-success": "#45e08c",
+        "status-info": "#4cc4ff",
+        "status-warning": "#ffc233",
+        "status-attention": "#ff6ad5",
+        "status-danger": "#ff7868",
+        "status-merged": "#b48cff",
+        "status-dormant": "#5f8a78",
+        "usage-track-toned": "#0b1914",
+        "code-selection": "#4f9078",
+        "code-find": "#c89038",
+        "code-find-current": "#ffa040",
+        "code-highlight-ink": "#000000",
+        "channel-staging": "#ffc860",
+        "account-ink-blue": "#8cc4ff",
+        "account-ink-violet": "#c8a8ff",
+        "lane-1": "#3ff0a8",
+        "lane-2": "#ff9a3a",
+        "lane-3": "#40e0e0",
+        "lane-4": "#ffc233",
+        "lane-5": "#4cc4ff",
+        "lane-6": "#ff7868",
+        "lane-7": "#b48cff",
+        "lane-8": "#ff6ad5"
+      },
+      "terminal": {
+        "background": "#091511",
+        "foreground": "#c6f5dc",
+        "cursor": "#ff9a3a",
+        "selection": "#235040",
+        "ansi": [
+          "#1a2a24",
+          "#ff6a5a",
+          "#3ff0a8",
+          "#ffb020",
+          "#4fa8ff",
+          "#ff6aa0",
+          "#40e0e0",
+          "#c6f5dc",
+          "#7fa898",
+          "#ff8a7a",
+          "#7affc8",
+          "#ffd060",
+          "#80c0ff",
+          "#ff9ac0",
+          "#80ffff",
+          "#effff6"
+        ]
+      },
+      "syntax": {
+        "tokenColors": [
+          {
+            "scope": "comment",
+            "settings": {
+              "foreground": "#82ad9a",
+              "fontStyle": "italic"
+            }
+          },
+          {
+            "scope": [
+              "keyword",
+              "storage",
+              "keyword.operator.new"
+            ],
+            "settings": {
+              "foreground": "#ff9a3a"
+            }
+          },
+          {
+            "scope": [
+              "string",
+              "string.quoted"
+            ],
+            "settings": {
+              "foreground": "#4dffb4"
+            }
+          },
+          {
+            "scope": [
+              "entity.name.function",
+              "support.function"
+            ],
+            "settings": {
+              "foreground": "#ffc860"
+            }
+          },
+          {
+            "scope": [
+              "constant.numeric",
+              "constant.language"
+            ],
+            "settings": {
+              "foreground": "#ff8a7a"
+            }
+          },
+          {
+            "scope": [
+              "entity.name.type",
+              "support.type",
+              "entity.name.class"
+            ],
+            "settings": {
+              "foreground": "#5ce8e8"
+            }
+          },
+          {
+            "scope": [
+              "variable",
+              "meta.definition.variable"
+            ],
+            "settings": {
+              "foreground": "#c6f5dc"
+            }
+          },
+          {
+            "scope": [
+              "entity.name.tag"
+            ],
+            "settings": {
+              "foreground": "#ff9a3a"
+            }
+          },
+          {
+            "scope": [
+              "entity.other.attribute-name"
+            ],
+            "settings": {
+              "foreground": "#9effd0"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
