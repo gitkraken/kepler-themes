@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildIndex, buildSite } from '../build-index.mjs';
-import { renderLandingPage } from '../lib/landing-page.mjs';
+import { DOWNLOAD_URL, SITE_URL, renderLandingPage } from '../lib/landing-page.mjs';
 import { makeGallery, validFamily } from './helpers.mjs';
 
 const NOW = new Date('2026-11-01T12:00:00Z');
@@ -230,7 +230,7 @@ test('the build copies every file the page loads and requests nothing from anoth
   urls.push(...[...css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)].map((m) => m[1]));
   assert.ok(urls.includes('site.js') && urls.includes('brand/kep.js') && urls.includes('fonts/dm-sans.woff2'));
   for (const url of urls) {
-    if (/^https:\/\/github\.com\/gitkraken\/kepler-themes/.test(url)) continue;
+    if (/^https:\/\/github\.com\/gitkraken\/kepler-themes/.test(url) || url === DOWNLOAD_URL) continue;
     assert.ok(!/^[a-z][a-z0-9+.-]*:|^\/\//i.test(url), `${url} is relative`);
     assert.ok(existsSync(join(outDir, url)), `${url} exists in the output`);
   }
@@ -245,4 +245,14 @@ test('the page footer links the index and states the catalog date', async () => 
   const { html } = await build(root);
   assert.ok(html.includes('Catalog updated 2026-11-01, checked with Kepler 9.9.9'));
   assert.ok(html.includes('<a href="v1/index.json">Index (JSON)</a>'));
+});
+
+test('a visitor without Kepler is told what it is and where to download it', () => {
+  const html = renderLandingPage(index([]));
+  assert.ok(html.includes("GitKraken's agent-agnostic development environment"));
+  assert.ok(html.includes(`<a class="btn primary" href="${DOWNLOAD_URL}">Build yours in Kepler</a>`));
+  assert.ok(html.includes(`<a class="get" href="${DOWNLOAD_URL}">Get Kepler</a>`));
+  assert.ok(html.includes('<a href="#launch">See how to submit it'), 'the hero links down to submitting');
+  assert.ok(html.includes('<meta property="og:title" content="Kepler Themes">'));
+  assert.ok(html.includes(`<meta property="og:url" content="${SITE_URL}">`));
 });
