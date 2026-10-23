@@ -28,34 +28,25 @@
         "brand": "#52f0a8",
         "brand-hover": "#7af7bd",
         "brand-active": "#3ad993",
-        "brand-fill": "#52f0a8",
-        "brand-fill-hover": "#7af7bd",
-        "brand-fill-active": "#3ad993",
         "content-on-brand": "#04120c",
-        "ai": "#b49cff",
-        "ai-hover": "#c9b8ff",
+        "ai": "oklch(0.74 0.18 285)",
+        "ai-hover": "oklch(0.79 0.17 285)",
         "selected-bg": 0.16,
         "selected-border": 0.55,
         "selected-ink": "#7af7bd",
-        "status-success": "#4fe39a",
-        "status-info": "#5cc8ff",
-        "status-warning": "#f2d36b",
-        "status-attention": "#ff9e6b",
-        "status-danger": "#ff7a8a",
-        "status-merged": "#c79bff",
-        "status-dormant": "#6b7c93",
-        "lane-1": "#52f0a8",
-        "lane-2": "#3ee0d0",
-        "lane-3": "#5cc8ff",
-        "lane-4": "#8fa8ff",
-        "lane-5": "#b49cff",
-        "lane-6": "#e58cf0",
-        "lane-7": "#ff8fb8",
-        "lane-8": "#c8f07a",
-        "scrim": "oklch(0.1 0.045 290 / 0.72)",
+        "lane-1": "oklch(0.76 0.13 160)",
+        "lane-2": "oklch(0.76 0.13 205)",
+        "lane-3": "oklch(0.76 0.13 250)",
+        "lane-4": "oklch(0.76 0.13 295)",
+        "lane-5": "oklch(0.76 0.13 340)",
+        "lane-6": "oklch(0.76 0.13 25)",
+        "lane-7": "oklch(0.76 0.13 70)",
+        "lane-8": "oklch(0.76 0.13 115)",
+        "scrim": "oklch(0.08 0.03 245 / 0.72)",
         "code-selection": "oklch(0.52 0.1 165)",
-        "code-find": "oklch(0.535 0.12 95)",
-        "code-find-current": "oklch(0.55 0.15 330)"
+        "code-find-current": "oklch(0.55 0.15 330)",
+        "diff-added": "oklch(0.72 0.155 150 / 0.2)",
+        "diff-removed": "oklch(0.72 0.155 22 / 0.2)"
       },
       "terminal": {
         "background": "#060a16",
@@ -111,7 +102,35 @@
           "punctuation.delimiter.html": "#9fb6c8",
           "punctuation.delimiter.jsx": "#9fb6c8",
           "punctuation.markup": "#9fb6c8",
-          "link_text": "#52f0a8"
+          "link_text": "#52f0a8",
+          "constant": "#ff9ec0",
+          "variant": "#ff9ec0",
+          "constructor": "#5cc8ff",
+          "namespace": "#3ee0d0",
+          "enum": "#3ee0d0",
+          "selector": "#3ee0d0",
+          "diff.plus": "#52f0a8",
+          "diff.minus": "#ff7a8a",
+          "embedded": "#c8dedd",
+          "label": "#c8dedd",
+          "text.jsx": "#c8dedd",
+          "emphasis": {
+            "color": "#c8dedd",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "#dcefee",
+            "font_weight": 700
+          },
+          "title": {
+            "color": "#52f0a8",
+            "font_weight": 700
+          },
+          "hint": "#7590a6",
+          "predictive": "#7590a6",
+          "preproc": "#b49cff",
+          "text.literal": "#52f0a8",
+          "link_uri": "#5cc8ff"
         }
       }
     },
@@ -138,23 +157,22 @@
         "brand-active": "oklch(0.36 0.09 162)",
         "ai": "oklch(0.47 0.19 290)",
         "ai-hover": "oklch(0.42 0.18 290)",
-        "selected-bg": 0.12,
-        "selected-border": 0.5,
         "selected-ink": "oklch(0.41 0.1 162)",
-        "lane-1": "oklch(0.52 0.13 160)",
-        "lane-2": "oklch(0.52 0.13 190)",
-        "lane-3": "oklch(0.52 0.13 235)",
-        "lane-4": "oklch(0.52 0.13 265)",
-        "lane-5": "oklch(0.52 0.13 295)",
-        "lane-6": "oklch(0.52 0.13 325)",
-        "lane-7": "oklch(0.52 0.13 0)",
-        "lane-8": "oklch(0.52 0.13 125)",
-        "scrim": "oklch(0.22 0.05 290 / 0.5)",
+        "lane-1": "oklch(0.52 0.14 160)",
+        "lane-2": "oklch(0.52 0.14 205)",
+        "lane-3": "oklch(0.52 0.14 250)",
+        "lane-4": "oklch(0.52 0.14 295)",
+        "lane-5": "oklch(0.52 0.14 340)",
+        "lane-6": "oklch(0.52 0.14 25)",
+        "lane-7": "oklch(0.52 0.14 70)",
+        "lane-8": "oklch(0.52 0.14 115)",
+        "scrim": "oklch(0.2 0.03 235 / 0.5)",
         "code-selection": "oklch(0.62 0.08 165)",
-        "code-find": "oklch(0.62 0.12 95)",
         "code-find-current": "oklch(0.64 0.14 330)",
         "account-ink-rose": "oklch(0.52 0.2 352)",
-        "account-ink-lime": "oklch(0.48 0.115 121)"
+        "account-ink-lime": "oklch(0.48 0.115 121)",
+        "diff-added": "oklch(0.48 0.15 150 / 0.16)",
+        "diff-removed": "oklch(0.48 0.15 22 / 0.16)"
       },
       "terminal": {
         "background": "#f0f4f9",
@@ -210,7 +228,35 @@
           "punctuation.delimiter.html": "#4a5a6c",
           "punctuation.delimiter.jsx": "#4a5a6c",
           "punctuation.markup": "#4a5a6c",
-          "link_text": "#0d7350"
+          "link_text": "#0d7350",
+          "constant": "#ad2a63",
+          "variant": "#ad2a63",
+          "constructor": "#1f5fae",
+          "namespace": "#0b6a75",
+          "enum": "#0b6a75",
+          "selector": "#0b6a75",
+          "diff.plus": "#0d7350",
+          "diff.minus": "#b4233c",
+          "embedded": "#24303f",
+          "label": "#24303f",
+          "text.jsx": "#24303f",
+          "emphasis": {
+            "color": "#24303f",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "#1c2433",
+            "font_weight": 700
+          },
+          "title": {
+            "color": "#0d7350",
+            "font_weight": 700
+          },
+          "hint": "#52657a",
+          "predictive": "#52657a",
+          "preproc": "#6a3fc0",
+          "text.literal": "#0d7350",
+          "link_uri": "#1f5fae"
         }
       }
     }
