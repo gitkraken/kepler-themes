@@ -1,8 +1,8 @@
 {
   "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Quiet",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Giordano Piazza",
   "description": "Minimal dark and light themes: neutral greys, monochrome controls and a single soft blue accent.",
   "license": "MIT",
@@ -73,294 +73,81 @@
         ]
       },
       "syntax": {
-        "base": "dark-plus",
-        "tokenColors": [
-          {
-            "name": "Default text, operators, punctuation",
-            "scope": [
-              "source",
-              "text",
-              "meta.embedded",
-              "source.groovy.embedded",
-              "string meta.image.inline.markdown",
-              "variable.legacy.builtin.python",
-              "meta.template.expression",
-              "keyword.operator",
-              "storage.modifier.import.java",
-              "variable.language.wildcard.java",
-              "storage.modifier.package.java",
-              "entity.name.label"
-            ],
-            "settings": {
-              "foreground": "#cdcdcd"
-            }
+        "tokens": {
+          "foreground": "#cdcdcd",
+          "operator": "#cdcdcd",
+          "punctuation": "#cdcdcd",
+          "embedded": "#cdcdcd",
+          "label": "#cdcdcd",
+          "primary": "#cdcdcd",
+          "text.jsx": "#cdcdcd",
+          "link_uri": "#cdcdcd",
+          "keyword": "#8fb3e0",
+          "keyword.operator": "#8fb3e0",
+          "boolean": "#8fb3e0",
+          "constant.builtin": "#8fb3e0",
+          "variable.special": "#8fb3e0",
+          "preproc": "#8fb3e0",
+          "tag": "#8fb3e0",
+          "tag.doctype": "#8fb3e0",
+          "punctuation.special": "#8fb3e0",
+          "punctuation.list_marker": "#8fb3e0",
+          "punctuation.markup": {
+            "color": "#cdcdcd",
+            "font_style": "normal"
           },
-          {
-            "name": "Keywords, storage, this, language constants, tags",
-            "scope": [
-              "header",
-              "constant.language",
-              "entity.name.tag",
-              "markup.bold",
-              "markup.heading",
-              "markup.changed",
-              "punctuation.definition.list.begin.markdown",
-              "meta.preprocessor",
-              "entity.name.function.preprocessor",
-              "meta.diff.header",
-              "storage",
-              "storage.type",
-              "storage.modifier",
-              "keyword.operator.noexcept",
-              "punctuation.definition.template-expression.begin",
-              "punctuation.definition.template-expression.end",
-              "punctuation.section.embedded",
-              "keyword",
-              "keyword.operator.new",
-              "keyword.operator.expression",
-              "keyword.operator.cast",
-              "keyword.operator.sizeof",
-              "keyword.operator.alignof",
-              "keyword.operator.typeid",
-              "keyword.operator.alignas",
-              "keyword.operator.instanceof",
-              "keyword.operator.logical.python",
-              "keyword.operator.wordlike",
-              "punctuation.section.embedded.begin.php",
-              "punctuation.section.embedded.end.php",
-              "variable.language",
-              "constant.character",
-              "constant.other.option"
-            ],
-            "settings": {
-              "foreground": "#8fb3e0"
-            }
+          "title": {
+            "color": "#8fb3e0",
+            "font_weight": 700
           },
-          {
-            "name": "Comments",
-            "scope": [
-              "comment",
-              "punctuation.definition.quote.begin.markdown"
-            ],
-            "settings": {
-              "foreground": "#8e8e8e",
-              "fontStyle": "italic"
-            }
+          "emphasis.strong": {
+            "color": "#8fb3e0",
+            "font_style": "normal",
+            "font_weight": 700
           },
-          {
-            "name": "Numbers, enum values, units",
-            "scope": [
-              "constant.numeric",
-              "keyword.operator.plus.exponent",
-              "keyword.operator.minus.exponent",
-              "meta.preprocessor.numeric",
-              "keyword.other.unit",
-              "constant.sha.git-rebase"
-            ],
-            "settings": {
-              "foreground": "#8fb3e0"
-            }
+          "emphasis": {
+            "font_style": "italic"
           },
-          {
-            "name": "Regex, escapes, CSS selectors",
-            "scope": [
-              "constant.regexp",
-              "entity.name.tag.css",
-              "entity.name.tag.less",
-              "entity.other.attribute-name.class.css",
-              "source.css entity.other.attribute-name.class",
-              "entity.other.attribute-name.id.css",
-              "entity.other.attribute-name.parent-selector.css",
-              "entity.other.attribute-name.parent.less",
-              "source.css entity.other.attribute-name.pseudo-class",
-              "entity.other.attribute-name.pseudo-element.css",
-              "source.css.less entity.other.attribute-name.id",
-              "entity.other.attribute-name.scss",
-              "string.regexp",
-              "constant.character.character-class.regexp",
-              "constant.other.character-class.set.regexp",
-              "constant.other.character-class.regexp",
-              "constant.character.set.regexp",
-              "keyword.operator.quantifier.regexp",
-              "constant.character.escape"
-            ],
-            "settings": {
-              "foreground": "#b3c2a5"
-            }
+          "keyword.control": "#8fb3e0",
+          "keyword.import": "#8fb3e0",
+          "keyword.jsdoc": {
+            "font_style": "italic"
           },
-          {
-            "name": "Variables, parameters, properties, attributes",
-            "scope": [
-              "entity.other.attribute-name",
-              "meta.structure.dictionary.key.python",
-              "support.type.vendored.property-name",
-              "support.type.property-name",
-              "source.css variable",
-              "source.coffee.embedded",
-              "support.function.git-rebase",
-              "variable",
-              "meta.definition.variable.name",
-              "support.variable",
-              "entity.name.variable",
-              "constant.other.placeholder",
-              "meta.object-literal.key"
-            ],
-            "settings": {
-              "foreground": "#cdcdcd"
-            }
+          "comment": {
+            "color": "#8e8e8e",
+            "font_style": "italic"
           },
-          {
-            "name": "Strings",
-            "scope": [
-              "markup.inline.raw",
-              "meta.preprocessor.string",
-              "string",
-              "meta.embedded.assembly",
-              "string.tag",
-              "string.value",
-              "support.constant.property-value",
-              "support.constant.font-name",
-              "support.constant.media-type",
-              "support.constant.media",
-              "constant.other.color.rgb-value",
-              "constant.other.rgb-value",
-              "support.constant.color",
-              "punctuation.definition.group.regexp",
-              "punctuation.definition.group.assertion.regexp",
-              "punctuation.definition.character-class.regexp",
-              "punctuation.character.set.begin.regexp",
-              "punctuation.character.set.end.regexp",
-              "keyword.operator.negation.regexp",
-              "support.other.parenthesis.regexp"
-            ],
-            "settings": {
-              "foreground": "#b3c2a5"
-            }
+          "hint": "#8e8e8e",
+          "predictive": "#8e8e8e",
+          "punctuation.bracket.html": "#8e8e8e",
+          "punctuation.bracket.jsx": "#8e8e8e",
+          "punctuation.delimiter.html": "#cdcdcd",
+          "punctuation.delimiter.jsx": "#cdcdcd",
+          "number": "#8fb3e0",
+          "diff.plus": "#a5c19b",
+          "string": "#b3c2a5",
+          "text.literal": "#b3c2a5",
+          "link_text": "#b3c2a5",
+          "diff.minus": "#d48c8c",
+          "string.regex": "#b3c2a5",
+          "string.escape": "#b3c2a5",
+          "selector": "#b3c2a5",
+          "string.special.symbol": "#8fb3e0",
+          "variable": "#cdcdcd",
+          "property": "#cdcdcd",
+          "attribute": "#cdcdcd",
+          "function": "#ededed",
+          "constructor": "#ededed",
+          "type": "#dddddd",
+          "type.jsdoc": {
+            "font_style": "italic"
           },
-          {
-            "name": "Tag brackets",
-            "scope": [
-              "punctuation.definition.tag"
-            ],
-            "settings": {
-              "foreground": "#8e8e8e"
-            }
-          },
-          {
-            "name": "Functions",
-            "scope": [
-              "entity.name.function",
-              "support.function",
-              "support.constant.handlebars",
-              "source.powershell variable.other.member",
-              "entity.name.operator.custom-literal",
-              "keyword.operator.or.regexp",
-              "keyword.control.anchor.regexp"
-            ],
-            "settings": {
-              "foreground": "#ededed"
-            }
-          },
-          {
-            "name": "Types, classes, namespaces",
-            "scope": [
-              "support.class",
-              "support.type",
-              "entity.name.type",
-              "entity.name.namespace",
-              "entity.other.attribute",
-              "entity.name.scope-resolution",
-              "entity.name.class",
-              "storage.type.numeric.go",
-              "storage.type.byte.go",
-              "storage.type.boolean.go",
-              "storage.type.string.go",
-              "storage.type.uintptr.go",
-              "storage.type.error.go",
-              "storage.type.rune.go",
-              "storage.type.cs",
-              "storage.type.generic.cs",
-              "storage.type.modifier.cs",
-              "storage.type.variable.cs",
-              "storage.type.annotation.java",
-              "storage.type.generic.java",
-              "storage.type.java",
-              "storage.type.object.array.java",
-              "storage.type.primitive.array.java",
-              "storage.type.primitive.java",
-              "storage.type.token.java",
-              "storage.type.groovy",
-              "storage.type.annotation.groovy",
-              "storage.type.parameters.groovy",
-              "storage.type.generic.groovy",
-              "storage.type.object.array.groovy",
-              "storage.type.primitive.array.groovy",
-              "storage.type.primitive.groovy",
-              "meta.type.cast.expr",
-              "meta.type.new.expr",
-              "support.constant.math",
-              "support.constant.dom",
-              "support.constant.json",
-              "entity.other.inherited-class",
-              "punctuation.separator.namespace.ruby"
-            ],
-            "settings": {
-              "foreground": "#dddddd"
-            }
-          },
-          {
-            "name": "Control flow, import/export",
-            "scope": [
-              "keyword.control",
-              "source.cpp keyword.operator.new",
-              "keyword.operator.delete",
-              "keyword.other.using",
-              "keyword.other.directive.using",
-              "keyword.other.operator",
-              "entity.name.operator"
-            ],
-            "settings": {
-              "foreground": "#8fb3e0"
-            }
-          },
-          {
-            "name": "Constants, enum members",
-            "scope": [
-              "variable.other.constant",
-              "variable.other.enummember"
-            ],
-            "settings": {
-              "foreground": "#8fb3e0"
-            }
-          },
-          {
-            "name": "Diff: inserted lines",
-            "scope": [
-              "markup.inserted"
-            ],
-            "settings": {
-              "foreground": "#a5c19b"
-            }
-          },
-          {
-            "name": "Diff: deleted lines",
-            "scope": [
-              "markup.deleted"
-            ],
-            "settings": {
-              "foreground": "#d48c8c"
-            }
-          },
-          {
-            "name": "Invalid",
-            "scope": [
-              "invalid"
-            ],
-            "settings": {
-              "foreground": "#d48c8c"
-            }
-          }
-        ]
+          "namespace": "#dddddd",
+          "enum": "#dddddd",
+          "tag.component.jsx": "#dddddd",
+          "constant": "#8fb3e0",
+          "variant": "#8fb3e0"
+        }
       }
     },
     {
@@ -431,306 +218,79 @@
         ]
       },
       "syntax": {
-        "base": "light-plus",
-        "tokenColors": [
-          {
-            "name": "Default text, operators, punctuation",
-            "scope": [
-              "source",
-              "text",
-              "meta.embedded",
-              "source.groovy.embedded",
-              "string meta.image.inline.markdown",
-              "variable.legacy.builtin.python",
-              "meta.template.expression",
-              "keyword.operator",
-              "storage.modifier.import.java",
-              "variable.language.wildcard.java",
-              "storage.modifier.package.java",
-              "keyword.operator.quantifier.regexp",
-              "entity.name.label"
-            ],
-            "settings": {
-              "foreground": "#2b2b2b"
-            }
+        "tokens": {
+          "foreground": "#2b2b2b",
+          "operator": "#2b2b2b",
+          "punctuation": "#2b2b2b",
+          "embedded": "#2b2b2b",
+          "label": "#2b2b2b",
+          "primary": "#2b2b2b",
+          "text.jsx": "#2b2b2b",
+          "link_uri": "#2b2b2b",
+          "keyword": "#2c5a96",
+          "keyword.operator": "#2c5a96",
+          "boolean": "#2c5a96",
+          "constant.builtin": "#2c5a96",
+          "variable.special": "#2c5a96",
+          "preproc": "#2c5a96",
+          "tag": "#2c5a96",
+          "tag.doctype": "#2c5a96",
+          "punctuation.special": "#2c5a96",
+          "punctuation.list_marker": "#2c5a96",
+          "punctuation.markup": "#2b2b2b",
+          "title": {
+            "color": "#2c5a96",
+            "font_weight": 700
           },
-          {
-            "name": "Variables, parameters, properties",
-            "scope": [
-              "meta.diff.header",
-              "markup.bold",
-              "variable",
-              "meta.definition.variable.name",
-              "support.variable",
-              "entity.name.variable",
-              "constant.other.placeholder",
-              "meta.object-literal.key"
-            ],
-            "settings": {
-              "foreground": "#2b2b2b"
-            }
+          "emphasis.strong": {
+            "color": "#2b2b2b",
+            "font_style": "normal",
+            "font_weight": 700
           },
-          {
-            "name": "Comments",
-            "scope": [
-              "comment"
-            ],
-            "settings": {
-              "foreground": "#6b6b6b",
-              "fontStyle": "italic"
-            }
+          "emphasis": {
+            "font_style": "italic"
           },
-          {
-            "name": "Keywords, storage, this, language constants",
-            "scope": [
-              "constant.language",
-              "meta.preprocessor",
-              "entity.name.function.preprocessor",
-              "storage",
-              "storage.type",
-              "storage.modifier",
-              "keyword.operator.noexcept",
-              "punctuation.definition.template-expression.begin",
-              "punctuation.definition.template-expression.end",
-              "punctuation.section.embedded",
-              "keyword",
-              "keyword.operator.new",
-              "keyword.operator.expression",
-              "keyword.operator.cast",
-              "keyword.operator.sizeof",
-              "keyword.operator.alignof",
-              "keyword.operator.typeid",
-              "keyword.operator.alignas",
-              "keyword.operator.instanceof",
-              "keyword.operator.logical.python",
-              "keyword.operator.wordlike",
-              "variable.language",
-              "constant.character",
-              "constant.other.option"
-            ],
-            "settings": {
-              "foreground": "#2c5a96"
-            }
+          "keyword.control": "#2c5a96",
+          "keyword.import": "#2c5a96",
+          "keyword.jsdoc": {
+            "font_style": "italic"
           },
-          {
-            "name": "Numbers, enum values, units",
-            "scope": [
-              "constant.numeric",
-              "keyword.operator.plus.exponent",
-              "keyword.operator.minus.exponent",
-              "meta.preprocessor.numeric",
-              "keyword.other.unit",
-              "constant.sha.git-rebase"
-            ],
-            "settings": {
-              "foreground": "#2c5a96"
-            }
+          "comment": {
+            "color": "#6b6b6b",
+            "font_style": "italic"
           },
-          {
-            "name": "Tags, regex, CSS selectors",
-            "scope": [
-              "constant.regexp",
-              "entity.name.tag",
-              "entity.name.selector",
-              "entity.other.attribute-name.class.css",
-              "source.css entity.other.attribute-name.class",
-              "entity.other.attribute-name.id.css",
-              "entity.other.attribute-name.parent-selector.css",
-              "entity.other.attribute-name.parent.less",
-              "source.css entity.other.attribute-name.pseudo-class",
-              "entity.other.attribute-name.pseudo-element.css",
-              "source.css.less entity.other.attribute-name.id",
-              "entity.other.attribute-name.scss",
-              "markup.heading",
-              "punctuation.definition.tag",
-              "string.regexp",
-              "punctuation.section.embedded.begin.php",
-              "punctuation.section.embedded.end.php",
-              "constant.character.character-class.regexp",
-              "constant.other.character-class.set.regexp",
-              "constant.other.character-class.regexp",
-              "constant.character.set.regexp"
-            ],
-            "settings": {
-              "foreground": "#2c5a96"
-            }
+          "hint": "#6b6b6b",
+          "predictive": "#6b6b6b",
+          "punctuation.bracket.html": "#2c5a96",
+          "punctuation.bracket.jsx": "#2c5a96",
+          "punctuation.delimiter.html": "#2b2b2b",
+          "punctuation.delimiter.jsx": "#2b2b2b",
+          "number": "#2c5a96",
+          "diff.plus": "#3f6a36",
+          "string": "#47663a",
+          "text.literal": "#47663a",
+          "link_text": "#47663a",
+          "diff.minus": "#983c3c",
+          "string.regex": "#2c5a96",
+          "string.escape": "#2b2b2b",
+          "selector": "#2c5a96",
+          "string.special.symbol": "#2c5a96",
+          "variable": "#2b2b2b",
+          "property": "#2b2b2b",
+          "property.json_key": "#2b2b2b",
+          "attribute": "#2b2b2b",
+          "function": "#111111",
+          "constructor": "#111111",
+          "type": "#1f1f1f",
+          "type.jsdoc": {
+            "font_style": "italic"
           },
-          {
-            "name": "Attributes, properties, JSON keys, escapes",
-            "scope": [
-              "entity.other.attribute-name",
-              "support.type.vendored.property-name",
-              "support.type.property-name",
-              "support.type.property-name.json",
-              "source.css variable",
-              "source.coffee.embedded",
-              "keyword.operator.or.regexp",
-              "keyword.control.anchor.regexp",
-              "constant.character.escape"
-            ],
-            "settings": {
-              "foreground": "#2b2b2b"
-            }
-          },
-          {
-            "name": "Strings, regex groups",
-            "scope": [
-              "markup.inline.raw",
-              "meta.preprocessor.string",
-              "string",
-              "string.comment.buffered.block.pug",
-              "string.quoted.pug",
-              "string.interpolated.pug",
-              "string.unquoted.plain.in.yaml",
-              "string.unquoted.plain.out.yaml",
-              "string.unquoted.block.yaml",
-              "string.quoted.single.yaml",
-              "string.quoted.double.xml",
-              "string.quoted.single.xml",
-              "string.unquoted.cdata.xml",
-              "string.quoted.double.html",
-              "string.quoted.single.html",
-              "string.unquoted.html",
-              "string.quoted.single.handlebars",
-              "string.quoted.double.handlebars",
-              "meta.embedded.assembly",
-              "punctuation.definition.group.regexp",
-              "punctuation.definition.group.assertion.regexp",
-              "punctuation.definition.character-class.regexp",
-              "punctuation.character.set.begin.regexp",
-              "punctuation.character.set.end.regexp",
-              "keyword.operator.negation.regexp",
-              "support.other.parenthesis.regexp"
-            ],
-            "settings": {
-              "foreground": "#47663a"
-            }
-          },
-          {
-            "name": "Constants, enum members, CSS values",
-            "scope": [
-              "markup.changed",
-              "punctuation.definition.quote.begin.markdown",
-              "punctuation.definition.list.begin.markdown",
-              "meta.structure.dictionary.key.python",
-              "support.function.git-rebase",
-              "variable.other.constant",
-              "variable.other.enummember",
-              "support.constant.property-value",
-              "support.constant.font-name",
-              "support.constant.media-type",
-              "support.constant.media",
-              "constant.other.color.rgb-value",
-              "constant.other.rgb-value",
-              "support.constant.color"
-            ],
-            "settings": {
-              "foreground": "#2c5a96"
-            }
-          },
-          {
-            "name": "Functions",
-            "scope": [
-              "entity.name.function",
-              "support.function",
-              "support.constant.handlebars",
-              "source.powershell variable.other.member",
-              "entity.name.operator.custom-literal"
-            ],
-            "settings": {
-              "foreground": "#111111"
-            }
-          },
-          {
-            "name": "Types, classes, namespaces",
-            "scope": [
-              "support.class",
-              "support.type",
-              "entity.name.type",
-              "entity.name.namespace",
-              "entity.other.attribute",
-              "entity.name.scope-resolution",
-              "entity.name.class",
-              "storage.type.numeric.go",
-              "storage.type.byte.go",
-              "storage.type.boolean.go",
-              "storage.type.string.go",
-              "storage.type.uintptr.go",
-              "storage.type.error.go",
-              "storage.type.rune.go",
-              "storage.type.cs",
-              "storage.type.generic.cs",
-              "storage.type.modifier.cs",
-              "storage.type.variable.cs",
-              "storage.type.annotation.java",
-              "storage.type.generic.java",
-              "storage.type.java",
-              "storage.type.object.array.java",
-              "storage.type.primitive.array.java",
-              "storage.type.primitive.java",
-              "storage.type.token.java",
-              "storage.type.groovy",
-              "storage.type.annotation.groovy",
-              "storage.type.parameters.groovy",
-              "storage.type.generic.groovy",
-              "storage.type.object.array.groovy",
-              "storage.type.primitive.array.groovy",
-              "storage.type.primitive.groovy",
-              "meta.type.cast.expr",
-              "meta.type.new.expr",
-              "support.constant.math",
-              "support.constant.dom",
-              "support.constant.json",
-              "entity.other.inherited-class",
-              "punctuation.separator.namespace.ruby"
-            ],
-            "settings": {
-              "foreground": "#1f1f1f"
-            }
-          },
-          {
-            "name": "Control flow, import/export",
-            "scope": [
-              "keyword.control",
-              "source.cpp keyword.operator.new",
-              "source.cpp keyword.operator.delete",
-              "keyword.other.using",
-              "keyword.other.directive.using",
-              "keyword.other.operator",
-              "entity.name.operator"
-            ],
-            "settings": {
-              "foreground": "#2c5a96"
-            }
-          },
-          {
-            "name": "Diff: inserted lines",
-            "scope": [
-              "markup.inserted"
-            ],
-            "settings": {
-              "foreground": "#3f6a36"
-            }
-          },
-          {
-            "name": "Diff: deleted lines",
-            "scope": [
-              "markup.deleted"
-            ],
-            "settings": {
-              "foreground": "#983c3c"
-            }
-          },
-          {
-            "name": "Invalid",
-            "scope": [
-              "invalid"
-            ],
-            "settings": {
-              "foreground": "#983c3c"
-            }
-          }
-        ]
+          "namespace": "#1f1f1f",
+          "enum": "#1f1f1f",
+          "tag.component.jsx": "#1f1f1f",
+          "constant": "#2c5a96",
+          "variant": "#2c5a96"
+        }
       }
     }
   ]

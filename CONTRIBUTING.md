@@ -28,7 +28,9 @@ themes/
 
 ### The family file
 
-These keys are required: `name`, `version`, `author`, `description`, `license`, `themes`. `schemaVersion` may be left out or set to 1. `homepage` is optional and must be an https URL. No other top-level keys are allowed. Kepler's format documents the themes themselves.
+These keys are required: `name`, `version`, `author`, `description`, `license`, `themes`. `schemaVersion` is the format of the file. Write 2, the current format. A file without it is format 1, which loads as before unless it holds `syntax.tokenColors`: Kepler drops those on load, so its code takes Kepler's own colors, and says so in a notice, and the gallery fails on any notice. Which formats exist is up to Kepler's validator in `vendor/`, so a number it does not know fails there. `homepage` is optional and must be an https URL. No other top-level keys are allowed. Kepler's format documents the themes themselves.
+
+In format 2 a theme colors code in `syntax`: `tokens` is keyed by token slot (`keyword`, `string`, `comment`, `keyword.control` and so on, the names Zed themes use), each a color or `{ "color", "font_style", "font_weight" }`. A slot you set colors its dotted children too (`keyword` covers `keyword.control`) unless you set them as well, and it wins over Kepler's own colors and the `base`. The optional `base` names a bundled highlights theme (such as `dark-plus`) to draw the slots you leave out from. Its colors are held to the same contrast floors as your own, so a `base` that fails contrast needs those slots overridden in `tokens`, or no `base` at all. Format 1's `syntax.tokenColors` (TextMate scopes) is no longer accepted by the gallery.
 
 ### gallery.json
 

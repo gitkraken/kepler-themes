@@ -59,7 +59,7 @@ test('envelope enforces required fields, licenses and known keys', async () => {
         version: 'one',
         basedOn: 'x',
         homepage: 'http://example.com',
-        schemaVersion: 2,
+        schemaVersion: 0,
       }),
     },
   });
@@ -67,6 +67,61 @@ test('envelope enforces required fields, licenses and known keys', async () => {
   for (const part of ['schemaVersion', 'version is required', 'license is required', 'description is required', 'author is required', '"basedOn"', 'homepage']) {
     assert.ok(text.includes(part), part);
   }
+});
+
+test('envelope leaves the ceiling on schemaVersion to Kepler\'s validator', async () => {
+  const root = makeGallery({
+    one: { family: validFamily({ schemaVersion: 1 }) },
+    two: { family: validFamily({ schemaVersion: 2 }) },
+    unstamped: { family: validFamily({ schemaVersion: undefined }) },
+    far: { family: validFamily({ schemaVersion: 99 }) },
+    half: { family: validFamily({ schemaVersion: 1.5 }) },
+    text: { family: validFamily({ schemaVersion: '2' }) },
+  });
+  const report = await run(root);
+  for (const slug of ['one', 'two', 'unstamped', 'far']) assert.deepEqual(problemsOf(report, slug, 'Envelope'), [], slug);
+  for (const slug of ['half', 'text']) assert.match(problemsOf(report, slug, 'Envelope').join(' '), /schemaVersion/, slug);
+});
+
+test('a format 2 family with syntax.tokens passes the vendored validator', async () => {
+  const vendor = await import('../../vendor/kepler-theme-check.mjs');
+  const family = validFamily({
+    schemaVersion: 2,
+    themes: [
+      {
+        id: 'example-dark',
+        name: 'Example Dark',
+        extends: 'dark',
+        syntax: {
+          tokens: {
+            foreground: '#e6e6e6',
+            keyword: '#ffd479',
+            string: '#a5ffd0',
+            comment: { color: '#bfc6d0', font_style: 'italic' },
+            title: { color: '#ffd479', font_weight: 700 },
+          },
+        },
+      },
+    ],
+  });
+  const root = makeGallery({ example: { family } });
+  const report = await run(root, { vendor });
+  assert.deepEqual(problemsOf(report, 'example', 'Kepler validation'), []);
+  assert.equal(report.failed, false, renderText(report));
+
+  // Format 1 TextMate rules still load, but the validator's notice fails the gallery.
+  const legacy = validFamily({
+    themes: [
+      {
+        id: 'example-dark',
+        name: 'Example Dark',
+        extends: 'dark',
+        syntax: { tokenColors: [{ scope: 'comment', settings: { foreground: '#bfc6d0' } }] },
+      },
+    ],
+  });
+  const old = await run(makeGallery({ example: { family: legacy } }), { vendor });
+  assert.match(problemsOf(old, 'example', 'Kepler validation').join(' '), /format 1/);
 });
 
 test('version rule: a changed file must outrank the base, an unchanged one passes, a new one is free', async () => {

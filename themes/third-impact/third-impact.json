@@ -1,8 +1,8 @@
 {
   "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "name": "Third Impact",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Justin Roberts",
   "description": "Phosphor green and orange command-screen UI, inspired by Evangelion's MAGI displays.",
   "license": "MIT",
@@ -91,87 +91,32 @@
         ]
       },
       "syntax": {
-        "tokenColors": [
-          {
-            "scope": "comment",
-            "settings": {
-              "foreground": "#82ad9a",
-              "fontStyle": "italic"
-            }
+        "tokens": {
+          "comment": {
+            "color": "#82ad9a",
+            "font_style": "italic"
           },
-          {
-            "scope": [
-              "keyword",
-              "storage",
-              "keyword.operator.new"
-            ],
-            "settings": {
-              "foreground": "#ff9a3a"
-            }
+          "keyword": "#ff9a3a",
+          "keyword.jsdoc": {
+            "font_style": "italic"
           },
-          {
-            "scope": [
-              "string",
-              "string.quoted"
-            ],
-            "settings": {
-              "foreground": "#4dffb4"
-            }
+          "string": "#4dffb4",
+          "function": "#ffc860",
+          "number": "#ff8a7a",
+          "boolean": "#ff8a7a",
+          "constant.builtin": "#ff8a7a",
+          "type": "#5ce8e8",
+          "type.jsdoc": {
+            "font_style": "italic"
           },
-          {
-            "scope": [
-              "entity.name.function",
-              "support.function"
-            ],
-            "settings": {
-              "foreground": "#ffc860"
-            }
-          },
-          {
-            "scope": [
-              "constant.numeric",
-              "constant.language"
-            ],
-            "settings": {
-              "foreground": "#ff8a7a"
-            }
-          },
-          {
-            "scope": [
-              "entity.name.type",
-              "support.type",
-              "entity.name.class"
-            ],
-            "settings": {
-              "foreground": "#5ce8e8"
-            }
-          },
-          {
-            "scope": [
-              "variable",
-              "meta.definition.variable"
-            ],
-            "settings": {
-              "foreground": "#c6f5dc"
-            }
-          },
-          {
-            "scope": [
-              "entity.name.tag"
-            ],
-            "settings": {
-              "foreground": "#ff9a3a"
-            }
-          },
-          {
-            "scope": [
-              "entity.other.attribute-name"
-            ],
-            "settings": {
-              "foreground": "#9effd0"
-            }
-          }
-        ]
+          "variable": "#c6f5dc",
+          "tag": "#ff9a3a",
+          "attribute": "#9effd0",
+          "punctuation.delimiter.html": "#c1c4c9",
+          "punctuation.delimiter.jsx": "#c1c4c9",
+          "punctuation.markup": "#c1c4c9",
+          "link_text": "#4dffb4"
+        }
       }
     }
   ]
