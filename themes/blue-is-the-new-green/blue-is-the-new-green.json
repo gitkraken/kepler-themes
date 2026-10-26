@@ -1,0 +1,57 @@
+{
+  "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
+  "schemaVersion": 1,
+  "name": "Blue Is the New Green",
+  "version": "1.0.0",
+  "author": "Alejandro Such",
+  "description": "Dark and light themes for red-green colour blindness: success turns blue, danger turns vermilion, and statuses and graph lanes differ in lightness too.",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "blue-is-the-new-green-dark",
+      "name": "Blue Is the New Green Dark",
+      "extends": "dark",
+      "colors": {
+        "status-success": "oklch(0.698 0.057 232.3)",
+        "status-info": "oklch(0.844 0.107 223.5)",
+        "status-warning": "oklch(0.929 0.196 103.7)",
+        "status-attention": "oklch(0.834 0.110 57.8)",
+        "status-danger": "oklch(0.713 0.194 47.4)",
+        "status-merged": "oklch(0.689 0.222 310.2)",
+        "lane-1": "oklch(0.596 0.240 336.7)",
+        "lane-2": "oklch(0.761 0.240 327.8)",
+        "lane-3": "oklch(0.944 0.221 118.5)",
+        "lane-4": "oklch(0.881 0.203 158.8)",
+        "lane-5": "oklch(0.742 0.146 170.5)",
+        "lane-6": "oklch(0.901 0.156 188.2)",
+        "lane-7": "oklch(0.731 0.240 141.0)",
+        "lane-8": "oklch(0.601 0.240 12.9)",
+        "diff-added": "oklch(0.5 0.12 240 / 0.25)",
+        "diff-removed": "oklch(0.55 0.17 47 / 0.2)"
+      }
+    },
+    {
+      "id": "blue-is-the-new-green-light",
+      "name": "Blue Is the New Green Light",
+      "extends": "light",
+      "colors": {
+        "status-success": "oklch(0.362 0.240 264.6)",
+        "status-info": "oklch(0.511 0.096 224.1)",
+        "status-warning": "oklch(0.510 0.106 78.9)",
+        "status-attention": "oklch(0.250 0.083 37.9)",
+        "status-danger": "oklch(0.400 0.075 48.5)",
+        "status-merged": "oklch(0.529 0.240 277.1)",
+        "lane-1": "oklch(0.438 0.240 285.6)",
+        "lane-2": "oklch(0.645 0.240 307.0)",
+        "lane-3": "oklch(0.639 0.170 347.8)",
+        "lane-4": "oklch(0.647 0.240 13.2)",
+        "lane-5": "oklch(0.521 0.167 139.8)",
+        "lane-6": "oklch(0.375 0.128 142.5)",
+        "lane-7": "oklch(0.268 0.185 264.0)",
+        "lane-8": "oklch(0.508 0.206 359.5)",
+        "diff-added": "oklch(0.7 0.15 255 / 0.25)",
+        "diff-removed": "oklch(0.75 0.17 47 / 0.25)"
+      }
+    }
+  ]
+}
