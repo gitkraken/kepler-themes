@@ -48,8 +48,13 @@ function envelopeProblems(f) {
   const family = parsedFamily(f);
   if (!family) return [`${mark(`${f.slug}.json`)} must be a JSON object.`];
   const problems = [];
-  if (family.schemaVersion !== undefined && family.schemaVersion !== 1) {
-    problems.push('schemaVersion must be absent or 1.');
+  // Which formats exist is Kepler's call: its validator (vendor/) reports a format newer than it
+  // knows, so a new format needs a vendor update and no change here.
+  if (
+    family.schemaVersion !== undefined &&
+    !(Number.isInteger(family.schemaVersion) && family.schemaVersion > 0)
+  ) {
+    problems.push('schemaVersion must be absent or a positive whole number.');
   }
   if (typeof family.name !== 'string' || family.name.length === 0 || family.name.length > 64) {
     problems.push('name is required: 1 to 64 characters.');
