@@ -1,7 +1,7 @@
 /*!
- * Kepler theme check 0.14.0
+ * Kepler theme check 0.15.0
  *
- * Generated from Kepler 0.14.0. Do not edit by hand: it is rebuilt from
+ * Generated from Kepler 0.15.0. Do not edit by hand: it is rebuilt from
  * Kepler and committed here by pull request.
  *
  * MIT License
@@ -29,7 +29,7 @@
  * Third-party notices of the code bundled below follow where it requires them.
  */
 
-//#region \0rolldown/runtime.js
+// \0rolldown/runtime.js
 var __defProp = Object.defineProperty;
 var __exportAll = (all, no_symbols) => {
 	let target = {};
@@ -45,16 +45,14 @@ var __exportAll = (all, no_symbols) => {
 	return target;
 };
 
-//#endregion
-//#region src/shared/theme/id.ts
+// src/shared/theme/id.ts
 /**
 * The shape every theme id takes. Imported on its own by the settings
 * validators, which Electron main also loads, so it carries no dependencies.
 */
 const THEME_ID_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-//#endregion
-//#region src/shared/theme/color.ts
+// src/shared/theme/color.ts
 const HEX_RE$1 = /^#([0-9a-f]{6}|[0-9a-f]{8})$/i;
 const SHORT_HEX_RE$1 = /^#[0-9a-f]{3,4}$/i;
 const NUM$1 = String.raw`(\d*\.?\d+)`;
@@ -214,8 +212,7 @@ function formatLadder(source, alpha) {
 	return `var(--${source}) / ${trimmed(alpha, 3)}`;
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/util.js
+// node_modules/zod/v4/core/util.js
 function getEnumValues(entries) {
 	const numericValues = Object.values(entries).filter((v) => typeof v === "number");
 	return Object.entries(entries).filter(([k, _]) => numericValues.indexOf(+k) === -1).map(([_, v]) => v);
@@ -522,6 +519,17 @@ function prefixIssues(path, issues) {
 function unwrapMessage(message) {
 	return typeof message === "string" ? message : message?.message;
 }
+/** The leading size checks of `defChecks` that set an upper bound, each paired with it. */
+function sizeCaps(defChecks) {
+	const caps = [];
+	for (const ch of defChecks ?? []) {
+		const d = ch._zod.def;
+		if (!/_(length|size)$|_equals$/.test(d.check)) break;
+		const max = d.maximum ?? d.length ?? d.size;
+		if (max >= 0) caps.push([max, ch]);
+	}
+	return caps;
+}
 function attachSchema(issues, start, inst) {
 	var _a;
 	for (let i = start; i < issues.length; i++) (_a = issues[i]).schema ?? (_a.schema = inst);
@@ -614,6 +622,7 @@ function hide(inst, key, value) {
 	return own(inst, key, value, false);
 }
 /** Adds members a table derives from the instance: each builds on first read and shadows as own data, and assignment shadows the same way, as when these were own properties. */
+/* @__NO_SIDE_EFFECTS__ */
 function derived(computes, table) {
 	for (const key in computes) {
 		const compute = computes[key];
@@ -738,8 +747,7 @@ function constantCatch(value) {
 	return fn;
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/core.js
+// node_modules/zod/v4/core/core.js
 var _a$1;
 const _zodDesc = {
 	value: void 0,
@@ -766,6 +774,7 @@ function newError(Definition) {
 	}
 	return new Definition();
 }
+/* @__NO_SIDE_EFFECTS__ */
 function $constructor(name, initializer, proto, params) {
 	const zodProto = {};
 	function Internals(def) {
@@ -845,8 +854,7 @@ function config(newConfig) {
 	return globalConfig;
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/errors.js
+// node_modules/zod/v4/core/errors.js
 function _getMessage() {
 	const internals = this._zod;
 	internals.message ?? (internals.message = JSON.stringify(internals.def, jsonStringifyReplacer, 2));
@@ -897,8 +905,7 @@ const initializer$1 = (inst, def) => {
 		});
 	}
 };
-const $ZodError = $constructor("$ZodError", initializer$1);
-const $ZodRealError = $constructor("$ZodError", initializer$1, void 0, { Parent: Error });
+const $ZodError = /* @__PURE__ */ $constructor("$ZodError", initializer$1);
 /** Get-or-create `obj[key]` as an own data property. A path segment naming an inherited member
 * ("toString", "constructor") would otherwise read through to the prototype, and assigning
 * "__proto__" would hit the setter instead of creating a key. */
@@ -962,8 +969,7 @@ function formatError(error, mapper = (issue) => issue.message) {
 	return fieldErrors;
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/parse.js
+// node_modules/zod/v4/core/parse.js
 function finalizeParams(callee, params) {
 	return {
 		callee: params?.callee ?? callee,
@@ -1166,8 +1172,7 @@ const _safeDecodeAsync = (_Err) => async (schema, value, _ctx) => {
 	return _safeParseAsync(_Err)(schema, value, _ctx);
 };
 
-//#endregion
-//#region node_modules/zod/v4/core/regexes.js
+// node_modules/zod/v4/core/regexes.js
 /**
 * @deprecated CUID v1 is deprecated by its authors due to information leakage
 * (timestamps embedded in the id). Use {@link cuid2} instead.
@@ -1238,8 +1243,7 @@ const number$1 = /^-?\d+(?:\.\d+)?$/;
 const lowercase = /^[^A-Z]*$/;
 const uppercase = /^[^a-z]*$/;
 
-//#endregion
-//#region node_modules/zod/v4/core/checks.js
+// node_modules/zod/v4/core/checks.js
 const $ZodCheck = /*@__PURE__*/ $constructor("$ZodCheck", (inst, def) => {
 	var _a;
 	inst._zod ?? (inst._zod = {});
@@ -1535,8 +1539,7 @@ const $ZodCheckOverwrite = /*@__PURE__*/ $constructor("$ZodCheckOverwrite", (ins
 	};
 });
 
-//#endregion
-//#region node_modules/zod/v4/core/doc.js
+// node_modules/zod/v4/core/doc.js
 var Doc = class {
 	constructor(args = [], closed = {}) {
 		this.content = [];
@@ -1570,16 +1573,14 @@ var Doc = class {
 	}
 };
 
-//#endregion
-//#region node_modules/zod/v4/core/versions.js
+// node_modules/zod/v4/core/versions.js
 const version$1 = {
 	major: 4,
 	minor: 6,
-	patch: 5
+	patch: 7
 };
 
-//#endregion
-//#region node_modules/zod/v4/core/schemas.js
+// node_modules/zod/v4/core/schemas.js
 const $ZodType = /*@__PURE__*/ $constructor("$ZodType", (inst, def) => {
 	var _a;
 	inst ?? (inst = {});
@@ -2062,6 +2063,26 @@ const $ZodNever = /*@__PURE__*/ $constructor("$ZodNever", (inst, def) => {
 		return payload;
 	};
 });
+function capSize(inst, size) {
+	const caps = sizeCaps(inst._zod.def.checks);
+	if (!caps.length) return;
+	const cap = Math.min(...caps.map((c) => c[0]));
+	const parse = inst._zod.parse;
+	inst._zod.parse = (payload, ctx) => {
+		const n = size(payload.value);
+		if (n > cap && !ctx?.skipChecks && ctx?.direction !== "backward") {
+			for (const [max, ch] of sizeCaps(inst._zod.def.checks)) if (n > max && ch._zod.def.when(payload)) {
+				const start = payload.issues.length;
+				ch._zod.check(payload);
+				payload.issues[start].continue = false;
+				attachSchema(payload.issues, start, inst);
+				return payload;
+			}
+		}
+		return parse(payload, ctx);
+	};
+}
+const arraySize = (input) => Array.isArray(input) ? input.length : -1;
 function handleArrayResult(result, final, index) {
 	if (result.issues.length) final.issues.push(...prefixIssues(index, result.issues));
 	final.value[index] = result.value;
@@ -2099,6 +2120,7 @@ const $ZodArray = /*@__PURE__*/ $constructor("$ZodArray", (inst, def) => {
 		if (proms.length) return Promise.all(proms).then(() => payload);
 		return payload;
 	};
+	capSize(inst, arraySize);
 });
 function handlePropertyResult(result, final, key, input, optin, optout) {
 	const isPresent = key in input;
@@ -2207,7 +2229,7 @@ const $ZodObject = /*@__PURE__*/ $constructor("$ZodObject", (inst, def) => {
 		}
 		return propValues;
 	});
-	const isObject$2 = isObject;
+	const isObject$1 = isObject;
 	const catchall = def.catchall;
 	let value;
 	const memo = globalConfig.memoizer;
@@ -2215,7 +2237,7 @@ const $ZodObject = /*@__PURE__*/ $constructor("$ZodObject", (inst, def) => {
 	inst._zod.parse = (payload, ctx) => {
 		value ?? (value = _normalized.value);
 		const input = payload.value;
-		if (!isObject$2(input)) {
+		if (!isObject$1(input)) {
 			payload.issues.push({
 				expected: "object",
 				code: "invalid_type",
@@ -2345,7 +2367,7 @@ const $ZodObjectJIT = /*@__PURE__*/ $constructor("$ZodObjectJIT", (inst, def) =>
 		return doc.compile();
 	};
 	let fastpass;
-	const isObject$1 = isObject;
+	const isObject$2 = isObject;
 	const jit = !globalConfig.jitless;
 	const allowsEval$1 = allowsEval;
 	const fastEnabled = jit && allowsEval$1.value;
@@ -2354,7 +2376,7 @@ const $ZodObjectJIT = /*@__PURE__*/ $constructor("$ZodObjectJIT", (inst, def) =>
 	inst._zod.parse = (payload, ctx) => {
 		value ?? (value = _normalized.value);
 		const input = payload.value;
-		if (!isObject$1(input)) {
+		if (!isObject$2(input)) {
 			payload.issues.push({
 				expected: "object",
 				code: "invalid_type",
@@ -2916,8 +2938,7 @@ function handleRefineResult(result, payload, input, inst) {
 	}
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/memoizer.js
+// node_modules/zod/v4/core/memoizer.js
 var $ZodCyclicError = class extends Error {
 	constructor() {
 		super(`Cannot parse a reference cycle that closes through a transform`);
@@ -3170,8 +3191,7 @@ function isBackEdge(ctx, value) {
 	return backEdges !== void 0 && isRef(value) && backEdges.has(value);
 }
 
-//#endregion
-//#region node_modules/zod/v4/locales/en.js
+// node_modules/zod/v4/locales/en.js
 const error = () => {
 	const Sizable = {
 		string: {
@@ -3279,8 +3299,7 @@ function en_default() {
 	return { localeError: error() };
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/registries.js
+// node_modules/zod/v4/core/registries.js
 var _a;
 var $ZodRegistry = class {
 	constructor() {
@@ -3327,8 +3346,7 @@ function registry() {
 (_a = globalThis).__zod_globalRegistry ?? (_a.__zod_globalRegistry = registry());
 const globalRegistry = globalThis.__zod_globalRegistry;
 
-//#endregion
-//#region node_modules/zod/v4/core/api.js
+// node_modules/zod/v4/core/api.js
 function snapshotChecks(def) {
 	if (def.checks) def.checks = [...def.checks];
 	return def;
@@ -3830,8 +3848,7 @@ function _check(fn, params) {
 	return ch;
 }
 
-//#endregion
-//#region node_modules/zod/v4/core/to-json-schema.js
+// node_modules/zod/v4/core/to-json-schema.js
 function assignProps(target, ...sources) {
 	for (const source of sources) for (const key of Reflect.ownKeys(source)) if (Object.prototype.propertyIsEnumerable.call(source, key)) assignProp(target, key, source[key]);
 	return target;
@@ -4276,8 +4293,7 @@ const createStandardJSONSchemaMethod = (schema, io, processors = {}) => (params)
 	return finalize(ctx, schema);
 };
 
-//#endregion
-//#region node_modules/zod/v4/core/json-schema-processors.js
+// node_modules/zod/v4/core/json-schema-processors.js
 const narrowMin = (agg, key, value) => {
 	if (agg[key] === void 0 || value > agg[key]) agg[key] = value;
 };
@@ -4697,8 +4713,7 @@ const optionalProcessor = (schema, ctx, _json, params) => {
 	seen.ref = def.innerType;
 };
 
-//#endregion
-//#region node_modules/zod/v4/classic/errors.js
+// node_modules/zod/v4/classic/errors.js
 const _installedErrorProtos = /* @__PURE__ */ new WeakSet([Object.prototype, Error.prototype]);
 function _lazyMethod(proto, key, make) {
 	Object.defineProperty(proto, key, {
@@ -4748,8 +4763,7 @@ const initializer = (inst, issues) => {
 };
 const ZodRealError = /*@__PURE__*/ $constructor("ZodError", initializer, void 0, { Parent: Error });
 
-//#endregion
-//#region node_modules/zod/v4/classic/parse.js
+// node_modules/zod/v4/classic/parse.js
 const parse$2 = /* @__PURE__ */ _parse(ZodRealError);
 const parseAsync = /* @__PURE__ */ _parseAsync(ZodRealError);
 const safeParse = /* @__PURE__ */ _safeParse(ZodRealError);
@@ -4763,8 +4777,7 @@ const safeDecode = /* @__PURE__ */ _safeDecode(ZodRealError);
 const safeEncodeAsync = /* @__PURE__ */ _safeEncodeAsync(ZodRealError);
 const safeDecodeAsync = /* @__PURE__ */ _safeDecodeAsync(ZodRealError);
 
-//#endregion
-//#region node_modules/zod/v4/classic/schemas.js
+// node_modules/zod/v4/classic/schemas.js
 function _ensureDefaultLocale() {
 	if (!globalConfig.localeError) config(en_default());
 }
@@ -5621,14 +5634,12 @@ function superRefine(fn, params) {
 	return _superRefine(fn, params);
 }
 
-//#endregion
-//#region src/shared/util/record.ts
+// src/shared/util/record.ts
 function isRecord(value) {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-//#endregion
-//#region src/shared/theme/format.ts
+// src/shared/theme/format.ts
 /**
 * The format of a theme family file. A file without a `schemaVersion` is version 1,
 * so the first format never needs to be stamped and stays valid forever.
@@ -5690,8 +5701,7 @@ function migrateThemeFamily(raw, version, steps = THEME_MIGRATIONS, target = 2, 
 	return current;
 }
 
-//#endregion
-//#region src/shared/theme/syntax-slots.ts
+// src/shared/theme/syntax-slots.ts
 /**
 * The token slots `@pierre/highlights` colors code by, in its own order. A
 * theme's `syntax.tokens` is keyed by these names, as a Zed theme's
@@ -5884,8 +5894,7 @@ function syntaxLayerFromBase(style) {
 	});
 }
 
-//#endregion
-//#region src/shared/theme/schema.ts
+// src/shared/theme/schema.ts
 const BASE_THEMES = [
 	"midnight",
 	"dark",
@@ -5955,8 +5964,7 @@ const themeFamilyEnvelopeSchema = strictObject({
 	themes: array(unknown()).min(1).max(8)
 });
 
-//#endregion
-//#region src/shared/theme/tokens.ts
+// src/shared/theme/tokens.ts
 /**
 * Every raw color custom property declared in the renderer stylesheet's
 * Midnight `:root` block, by name without the `--`. A theme may override exactly
@@ -6055,7 +6063,10 @@ const THEMEABLE_TOKENS = [
 	"usage-consumed",
 	"usage-track-toned",
 	"control-thumb",
-	"control-track"
+	"control-track",
+	"scrollbar-thumb",
+	"scrollbar-thumb-hover",
+	"scrollbar-track"
 ];
 /**
 * A token that was renamed, by its old name. A theme file written against the
@@ -6079,12 +6090,12 @@ function ladderSourceFor(token) {
 	if (token === "content" || token === "content-muted" || token === "content-subtle") return "ink";
 	if (token.startsWith("fill-")) return "ink";
 	if (token === "edge" || token.startsWith("edge-")) return "ink";
+	if (token.startsWith("scrollbar-")) return "ink";
 	if (token === "selected-bg" || token === "selected-border" || token === "focus-ring") return "brand";
 	return null;
 }
 
-//#endregion
-//#region src/shared/theme/resolve.ts
+// src/shared/theme/resolve.ts
 function themePolarityOf(base) {
 	return base === "light" ? "light" : "dark";
 }
@@ -6355,8 +6366,7 @@ function parseThemeFamily(json, slotAliases = SYNTAX_SLOT_ALIASES) {
 	};
 }
 
-//#endregion
-//#region src/shared/theme/terminal-ansi.ts
+// src/shared/theme/terminal-ansi.ts
 /**
 * The 16 slots Kepler's terminal draws when a theme names none, in ANSI order.
 * Light has its own set; Midnight and Dark share one.
@@ -6405,13 +6415,11 @@ const BUILT_IN_TERMINAL_ANSI = {
 	]
 };
 
-//#endregion
-//#region src/shared/theme/validation.ts
+// src/shared/theme/validation.ts
 /** The owner of an id taken by a theme that ships with Kepler. */
 const BUILT_IN_THEME_OWNER = "built-in";
 
-//#endregion
-//#region scripts/design/color.mjs
+// scripts/design/color.mjs
 /**
 * OKLCH <-> sRGB + WCAG contrast, used by `pnpm design:contrast` to prove the
 * palette in src/ui/index.css meets WCAG 2.2 AA in BOTH themes.
@@ -6713,8 +6721,7 @@ function parseColorLiteral(value) {
 	};
 }
 
-//#endregion
-//#region scripts/design/contrast-core.mjs
+// scripts/design/contrast-core.mjs
 /**
 * The WCAG 2.2 AA checks behind `pnpm design:contrast`, as pure functions over
 * data: the stylesheet's text, Kepler's syntax palette and theme families come
@@ -6753,6 +6760,7 @@ const BUILT_IN_SELECTORS = {
 function ladderSource(token) {
 	if (token === "content" || token === "content-muted" || token === "content-subtle") return "ink";
 	if (token.startsWith("fill-") || token === "edge" || token.startsWith("edge-")) return "ink";
+	if (token.startsWith("scrollbar-")) return "ink";
 	if (token === "selected-bg" || token === "selected-border" || token === "focus-ring") return "brand";
 	return null;
 }
@@ -6894,6 +6902,12 @@ function checkTheme({ theme, tokens: t, polarity, terminal, syntax, keplerSyntax
 		"--content-subtle"
 	]) check(theme, `${step} on every surface`, worstOnSurfaces(step), TEXT_MIN);
 	check(theme, "--edge-strong control boundary", worstOnSurfaces("--edge-strong", surfaces.slice(1, 3)), 3);
+	check(theme, "--scrollbar-thumb at rest", Math.min(...surfaces.slice(1, 3).map((s) => {
+		const track = resolveToken(t, t["--scrollbar-track"]);
+		const trackOnSurface = composite(track.rgb, s.rgb, track.alpha);
+		const thumb = resolveToken(t, t["--scrollbar-thumb"]);
+		return contrast(composite(thumb.rgb, trackOnSurface, thumb.alpha), trackOnSurface);
+	})), 3);
 	check(theme, "--focus-ring indicator", worstOnSurfaces("--focus-ring"), 3);
 	for (const accent of ["--brand", "--ai"]) {
 		check(theme, `${accent} as text`, worstOnSurfaces(accent), TEXT_MIN);
@@ -7201,8 +7215,7 @@ function checkSyntax(theme, t, slotsByColor, surfaces, selectedPlate, check, nam
 	}
 }
 
-//#endregion
-//#region node_modules/@pierre/highlights/dist/token-types.js
+// node_modules/@pierre/highlights/dist/token-types.js
 const tokenTypes = [
 	"none",
 	"attribute",
@@ -7279,8 +7292,7 @@ const tokenTypes = [
 	"foreground"
 ];
 
-//#endregion
-//#region node_modules/@pierre/highlights/dist/themes.js
+// node_modules/@pierre/highlights/dist/themes.js
 var themes_exports = /* @__PURE__ */ __exportAll({
 	andromeeda: () => andromeeda,
 	auroraX: () => auroraX,
@@ -9652,7 +9664,7 @@ var github_dark_default_default = {
 			"predictive": { "color": "#8b949e" },
 			"preproc": { "color": "#ff7b72" },
 			"primary": { "color": "#e6edf3" },
-			"property": { "color": "#FFA657" },
+			"property": { "color": "#e6edf3" },
 			"punctuation": { "color": "#e6edf3" },
 			"selector": { "color": "#7EE787" },
 			"enum": { "color": "#FFA657" },
@@ -9665,7 +9677,9 @@ var github_dark_default_default = {
 			"punctuation.special": { "color": "#FF7B72" },
 			"selector.class": { "color": "#79C0FF" },
 			"selector.id": { "color": "#79C0FF" },
-			"selector.pseudo": { "color": "#79C0FF" }
+			"selector.pseudo": { "color": "#79C0FF" },
+			"punctuation.delimiter.jsx": { "color": "#FF7B72" },
+			"variable.parameter": { "color": "#FFA657" }
 		}
 	}
 };
@@ -17709,8 +17723,7 @@ const pierreLightSoft = pierre_light_soft_default;
 const pierreLightTritanopia = pierre_light_tritanopia_default;
 const pierreLightVibrant = pierre_light_vibrant_default;
 
-//#endregion
-//#region scripts/design/syntax-bases.mjs
+// scripts/design/syntax-bases.mjs
 /**
 * The bundled highlights themes a theme may name as its `syntax.base`, looked
 * up by the kebab-case name the renderer's lazy loader keys them by. It is
@@ -17725,8 +17738,7 @@ function syntaxBaseStyle(name) {
 	return byName.get(name);
 }
 
-//#endregion
-//#region src/backend/themes/syntax-bases.ts
+// src/backend/themes/syntax-bases.ts
 const layers = /* @__PURE__ */ new Map();
 /** Whether a bundled highlights theme has this name, without building its layer. */
 function isSyntaxBaseName(name) {
@@ -17748,8 +17760,7 @@ function syntaxBaseLayer(name) {
 	return layer;
 }
 
-//#endregion
-//#region src/backend/themes/theme-preview.ts
+// src/backend/themes/theme-preview.ts
 const PREVIEW_SLOTS = {
 	text: "foreground",
 	keyword: "keyword",
@@ -17863,12 +17874,10 @@ function deriveThemePreview(theme, palettes, keplerSyntax) {
 	}
 }
 
-//#endregion
-//#region \0kepler:palette-css
-var _kepler_palette_css_default = "\n:root {\n  /* Neutral surfaces — monotonically lighter as elevation rises. */\n  --surface-sunken: 0.145 0.006 264; /* wells, inputs, code blocks   #090a0d */\n  --surface-canvas: 0.17 0.006 264; /* app background                #0e0f12 */\n  --surface-raised: 0.198 0.007 264; /* panels, cards, list surfaces #141619 */\n  --surface-overlay: 0.228 0.008 264; /* menus, popovers             #1b1c20 */\n\n  /* Ink — one color, four alpha steps. Worst-case ratios against the LIGHTEST\n     surface (overlay): strong 15.3 · content 11.4 · muted 7.2 · subtle 4.8. */\n  --ink: 0.965 0.004 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.85;\n  --content-muted: var(--ink) / 0.65;\n  --content-subtle: var(--ink) / 0.5;\n  --content-on-accent: var(--surface-sunken);\n\n  /* Fills — ink at low alpha, so they tint whatever they sit on. */\n  --fill-subtle: var(--ink) / 0.04;\n  --fill-muted: var(--ink) / 0.07;\n  --fill-strong: var(--ink) / 0.11;\n\n  /* Edges — `edge-strong` is the 3:1 control boundary (measured 3.00). */\n  --edge-subtle: var(--ink) / 0.08;\n  --edge: var(--ink) / 0.14;\n  --edge-strong: var(--ink) / 0.35;\n  /* Decorative line, between `edge` and `edge-strong`: visible on the canvas\n     without borrowing the control boundary's contrast contract. */\n  --edge-decor: var(--ink) / 0.22;\n\n  /* A sash's own element thickness and its (larger) grab/hover zone. The\n     hit-zone value is shared with the `Sash` primitive's panel-library\n     configuration — see the RESIZE HANDLES block below for why the two\n     must agree. */\n  --dock-tab-drop-line-size: 3px;\n  --sash-size: 5px;\n  --sash-hit: 12px;\n  /* How long the pointer rests on a sash before it lights up. A sash sits\n     between two surfaces the pointer crosses constantly, and lighting up on\n     every pass reads as flicker; the delay is what makes the highlight mean\n     \"you could drag this\". */\n  --sash-hover-delay: 250ms;\n\n  /* Brand teal. Lighter than the previous #1f8f7c and paired with near-black\n     ink rather than white: white on the old teal measured 4.02:1, under the\n     AA floor, and no single teal can satisfy both \"readable as text on the\n     canvas\" (wants lighter) and \"readable under white ink\" (wants darker).\n     Dark ink resolves the conflict with one color instead of two.\n     ink-on-brand 6.68 · brand-on-canvas 6.47 · on its badge tint 4.59 */\n  --brand: 0.66 0.099 178.8; /*                                     #3fa693 */\n  --brand-hover: 0.71 0.106 178.8;\n  --brand-active: 0.61 0.092 178.8;\n  /* Solid brand surfaces and the ink on them. Raw aliases resolved at the point\n     of use, so Dark and Light follow their own `--brand`/`--content-on-accent`;\n     a custom theme overrides them when its text-safe brand cannot carry text. */\n  --brand-fill: var(--brand);\n  --brand-fill-hover: var(--brand-hover);\n  --brand-fill-active: var(--brand-active);\n  --content-on-brand: var(--content-on-accent);\n\n  /* AI purple. Higher chroma than the status ramp, and 15° off status-merged,\n     so the system's only two purples stay separable.\n     ai-on-canvas 6.11 · ink-on-ai 7.11 */\n  --ai: 0.7 0.185 285; /*                                           #968dfe */\n  --ai-hover: 0.75 0.175 285;\n\n  /* Selection & focus — brand-tinted. The ink is text on the wash: a step\n     lighter than brand, because a segmented control lays the wash over its own\n     track, and brand there falls under 4.5:1 over an overlay.\n     on the wash, worst over the track 4.67 */\n  --selected-bg: var(--brand) / 0.14;\n  --selected-border: var(--brand) / 0.45;\n  --selected-ink: 0.69 0.099 178.8; /*                              #4aaf9c */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Status ramp — identical L and C, hue only. Worst ratio in the set: 6.39. */\n  --status-success: 0.72 0.155 150; /* running, open, passing       #4fbf6e */\n  --status-info: 0.72 0.155 230; /* building, in progress, info   #04b4ec */\n  --status-warning: 0.72 0.155 82; /* review, spawning, degraded    #d29a08 */\n  --status-attention: 0.72 0.155 50; /* BLOCKED ON YOU              #f08440 */\n  --status-danger: 0.72 0.155 22; /* errored, closed, failed        #f67878 */\n  --status-merged: 0.72 0.155 300; /* merged PR, finished issue, done task #b48cf6 */\n  --status-dormant: 0.58 0.01 264; /* disconnected-session ring — see @theme */\n\n  /* Host identity — six hues spread around the wheel at ~0.125-0.165 chroma\n     (raised from a muted 0.09 that read as six near-identical pastels), each\n     placed and measured to clear an OKLab distance from brand/ai/every status\n     hue (checked by a dedicated test) rather than eyeballed. Amber sits in\n     the narrow gap between status-attention and status-warning, and violet in\n     the narrow gap between ai and status-merged; both borrow extra separation\n     from lightness (off the shared 0.72) where hue alone can't clear the\n     floor, which is also what keeps all six apart under red-green color\n     vision deficiency. Dark inherits these unchanged (same reasoning as the\n     status ramp): both dark themes solve the same contrast problem at the\n     same amplitude, so a second set of numbers here would only be Midnight's\n     copied by hand. */\n  --host-rose: 0.72 0.16 355; /*                                       #f075aa */\n  --host-amber: 0.78 0.125 66; /*                                      #eda65a */\n  --host-lime: 0.72 0.155 118; /*                                      #9db128 */\n  --host-cyan: 0.72 0.155 204; /*                                      #0fbac7 */\n  --host-blue: 0.72 0.155 258; /*                                      #69a5fe */\n  --host-violet: 0.75 0.165 328; /*                                    #e585e2 */\n\n  /* Agent account identity, in two sets of the same six hues. The bold\n     `--account-*` set tints a ~14px glyph and the picker swatch: it needs\n     enough chroma to read against muted-gray neighbours and only 3:1 as a\n     non-text mark. The `--account-ink-*` set colors the small account name and\n     address in the session hover card, which needs 4.5:1 on every surface,\n     the overlay included; in light that forces a darker ink, so the two sets\n     diverge there and are identical here.\n     Chroma is pushed to what sRGB holds at each lightness (hues differ, so\n     cyan stays quieter than violet) and hues are moved off the status ramp,\n     brand and ai (rose leans pink, away from danger) because an account\n     color must never read as state. Dark inherits both sets unchanged. */\n  --account-rose: 0.72 0.2 352;\n  --account-amber: 0.8 0.16 72;\n  --account-lime: 0.8 0.19 125;\n  --account-cyan: 0.78 0.125 210;\n  --account-blue: 0.67 0.175 258;\n  --account-violet: 0.7 0.23 320;\n  --account-ink-rose: 0.72 0.2 352;\n  --account-ink-amber: 0.8 0.16 72;\n  --account-ink-lime: 0.8 0.19 125;\n  --account-ink-cyan: 0.78 0.125 210;\n  --account-ink-blue: 0.67 0.175 258;\n  --account-ink-violet: 0.7 0.23 320;\n\n  /* Channel badge/mark — mirrors the channel icon tints (shared table in\n     scripts/_channel-tints.mjs): staging blue, dev purple, source rust.\n     The ink is the icon's PILL color, its brightest element, which is what a\n     small dark-surface badge wants; the mark trio recolors the title-bar\n     mark's own gradient stops (both its highlights to `-mark-hi`, both its\n     deep stops to `-mark-deep`) and is repeated verbatim in light below,\n     since it is brand artwork rather than a themed surface. */\n  --channel-staging: 0.674 0.172 264; /* pill  #5F91FF */\n  --channel-staging-mark-hi: 0.958 0.021 246; /* #E6F3FF */\n  --channel-staging-mark-mid: 0.66 0.17 265; /* #5E8CF9 */\n  --channel-staging-mark-deep: 0.561 0.15 265; /* #486FCC */\n  --channel-dev: 0.728 0.168 301; /* pill  #B98BFF */\n  --channel-dev-mark-hi: 0.961 0.024 309; /* #F7EEFF */\n  --channel-dev-mark-mid: 0.66 0.169 300; /* #A376E9 */\n  --channel-dev-mark-deep: 0.56 0.15 300; /* #835CBE */\n  --channel-source: 0.779 0.127 63; /* pill  #F0A45A */\n  --channel-source-mark-hi: 0.955 0.032 69; /* #FFEDDA */\n  --channel-source-mark-mid: 0.66 0.167 53; /* #DE6F00 */\n  --channel-source-mark-deep: 0.56 0.145 52; /* #B45600 */\n\n  /* Modal scrim — darkens toward the canvas hue rather than to neutral black,\n     so a dialog's backdrop stays part of the same world. */\n  --scrim: 0.08 0.008 264 / 0.72;\n\n  /* Diff washes — low-alpha line backgrounds, hue-matched to the status ramp. */\n  --diff-added: 0.72 0.155 150 / 0.14;\n  --diff-removed: 0.72 0.155 22 / 0.14;\n\n  /* Code-view highlights — opaque so the measured contrast is the real one. Teal\n     for selection (the brand hue), amber for find, orange for the current match;\n     the ink is white because the highlights are mid-tone and light grey ink\n     cannot be 4.5:1 on a background that is also 3:1 from the plate. */\n  --code-selection: 0.525 0.09 178.8;\n  --code-find: 0.535 0.12 95;\n  --code-find-current: 0.55 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Commit-graph lanes — 8 hues, 45° apart, one L and C. */\n  --lane-1: 0.74 0.15 150;\n  --lane-2: 0.74 0.15 195;\n  --lane-3: 0.74 0.15 240;\n  --lane-4: 0.74 0.15 285;\n  --lane-5: 0.74 0.15 330;\n  --lane-6: 0.74 0.15 15;\n  --lane-7: 0.74 0.15 60;\n  --lane-8: 0.74 0.15 105;\n\n  /* Providers — external brand colors, lifted to readable lightness on the\n     dark themes. */\n  --provider-github: 0.857 0.014 248;\n  --provider-gitlab: 0.753 0.145 37;\n  --provider-jira: 0.73 0.116 258;\n  --provider-linear: 0.772 0.115 294;\n\n  /* Usage gauge — consumed is the BRIGHTER of the pair on the dark themes. */\n  --usage-track: 0.464 0.019 264;\n  --usage-consumed: 0.825 0.126 180;\n  /* Track for bars filled with a status tone. The neutral track is too light for\n     a status fill to clear 3:1 against it on the dark themes, so this one is\n     darker; Dark inherits it, and it clears 3:1 for all three tones on both. */\n  --usage-track-toned: 0.42 0.019 264;\n\n  /* Type stacks. The system stack is the right voice for a desktop tool: it is\n     the reader's own UI face, it needs no network, and it renders at the\n     platform's own hinting. */\n  --sans-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  --mono-font: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;\n\n  /* Elevation — the dark themes lift by lightness, so shadows only anchor true\n     overlays. */\n  --elevation-raised: 0 0 #0000;\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.7), 0 2px 6px -2px oklch(0 0 0 / 0.5);\n\n  /* The selected segment's fill. A separate token from the overlay surface so\n     a theme can lift its controls without also lifting every menu and popover;\n     by default it is the overlay, resolved where it is used, so Dark, Light and\n     every data theme inherit their own overlay. */\n  --control-thumb: var(--surface-overlay);\n\n  /* A text field's fill, shared by inputs, form selects and the segmented\n     track; the canvas on the dark themes. */\n  --field: var(--surface-canvas);\n\n  /* The shade a segmented track lays over an overlay surface (menu, popover),\n     where the field fill would sit two steps below the surface. Black at 10%\n     scales each channel by 0.9. Dark inherits it. */\n  --control-track: 0 0 0 / 0.1;\n\n  /* How much ink the selected segment mixes in so it stands off the field-fill\n     track. A popover takes a little more because its thumb shares the popover's\n     fill. */\n  --control-thumb-lift: 2.5%;\n  --control-thumb-lift-overlay: 5%;\n\n  /* Control track and thumb (segmented control). The track is a well: the field\n     fill (or the overlay shade) with an inset shadow. The thumb is raised by a\n     1px top highlight, a drop shadow and a hairline of black that keeps its\n     edge on the track. Dark inherits these, and so does every data theme by its\n     base's polarity. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.45);\n  --control-thumb-shadow:\n    inset 0 1px 0 oklch(var(--ink) / 0.1), 0 1px 2px oklch(0 0 0 / 0.55),\n    0 0 0 1px oklch(0 0 0 / 0.35);\n\n  color-scheme: dark;\n}\n\n:root.dark {\n  /* Midnight's ramp lifted bodily — same hue, same chroma, same step sizes. */\n  --surface-sunken: 0.205 0.006 264; /* wells, inputs, code blocks   #16171a */\n  --surface-canvas: 0.232 0.006 264; /* app background               #1c1d20 */\n  --surface-raised: 0.262 0.007 264; /* panels, cards, list surfaces #232528 */\n  --surface-overlay: 0.295 0.008 264; /* menus, popovers             #2a2d31 */\n\n  /* Dark's ramp sits higher, so both lifts take a little more ink. */\n  --control-thumb-lift: 3%;\n  --control-thumb-lift-overlay: 6%;\n\n  /* Ink drops with the surfaces rather than holding at Midnight's near-white, which\n     is what keeps this a softer theme instead of merely a greyer one. Worst-case\n     ratios against the LIGHTEST surface (overlay): strong 10.9 · content 8.6 ·\n     muted 6.3 · subtle 4.7. `--content-strong` and `--content-on-accent` are\n     inherited: both are written against tokens this block overrides. */\n  --ink: 0.92 0.004 264;\n  --content: var(--ink) / 0.87;\n  --content-muted: var(--ink) / 0.71;\n  --content-subtle: var(--ink) / 0.58;\n\n  /* Fills — alphas raised to hold Midnight's composited lightness delta (0.039 /\n     0.065 / 0.101), not Midnight's alphas, which would read thinner up here. */\n  --fill-subtle: var(--ink) / 0.05;\n  --fill-muted: var(--ink) / 0.085;\n  --fill-strong: var(--ink) / 0.13;\n\n  /* Edges — same treatment. `edge-strong` keeps the 3:1 control boundary\n     (measured 3.24) and is the one value here tuned to a ratio rather than to\n     Midnight's appearance. */\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.17;\n  --edge-strong: var(--ink) / 0.41;\n  --edge-decor: var(--ink) / 0.26;\n\n  /* Brand teal, lifted above Midnight's #3fa693, which would sit too close to\n     these lighter surfaces and to its own badge tint over them. Same hue and\n     the same near-black ink on top, so the action color is recognisably the\n     product's. brand-on-canvas 7.36 · ink-on-brand 7.83 · on its badge tint 4.58 */\n  --brand: 0.73 0.106 178.8; /*                                      #4ebda9 */\n  --brand-hover: 0.78 0.112 178.8;\n  --brand-active: 0.68 0.1 178.8;\n\n  /* AI purple, lifted so it still reads as text on its own badge tint over\n     these surfaces. ai-on-canvas 7.34 · ink-on-ai 7.81 · on its badge tint 4.57 */\n  --ai: 0.75 0.185 285; /*                                           #a6a1fe */\n  --ai-hover: 0.8 0.175 285;\n\n  /* Selection reads off a lighter brand, so the tint needs a touch more of it\n     to separate from a lighter row underneath. */\n  --selected-bg: var(--brand) / 0.16;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.60 */\n  --selected-ink: 0.77 0.106 178.8; /*                              #5ccab5 */\n\n  /* The six status hues are Midnight's, unchanged (AI purple is lifted above):\n     all of them still clear their floors here (worst in the status set 5.19), and a\n     second ramp at a second lightness is exactly the duplication the system\n     exists to remove. The dormant ring is the one exception — it is tuned\n     AGAINST its surface by construction, so it has to move with it (3.94, beside\n     Midnight's 3.96). */\n  --status-dormant: 0.63 0.01 264;\n\n  /* Scrim lightens with the canvas it dims. Still a darkening wash — a scrim\n     that merely greys the page cannot push it back. */\n  --scrim: 0.12 0.008 264 / 0.7;\n\n  /* Diff washes — same hues, a little more of them, since a 14% tint over a\n     lighter line is a fainter stripe. */\n  --diff-added: 0.72 0.155 150 / 0.15;\n  --diff-removed: 0.72 0.155 22 / 0.15;\n\n  /* Code-view highlights — the plate is lighter here, so the highlights rise with\n     it and the window that satisfies both 3:1 from the plate and 4.5:1 under\n     white ink narrows to about 0.015 of lightness. */\n  --code-selection: 0.545 0.09 178.8;\n  --code-find: 0.555 0.12 95;\n  --code-find-current: 0.57 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Usage gauge — the track is an opaque grey read against the panel it sits\n     on, so it rises with the panel; consumed is Midnight's and still clears the\n     3:1 the pair owes each other. */\n  --usage-track: 0.5 0.019 264;\n\n  /* Overlay shadow, softened. Elevation is lightness here as on Midnight, so the\n     shadow only anchors true overlays — and Midnight's 0.7 black, dropped on a\n     canvas this much lighter, reads as a hole cut in the page rather than as a\n     lift. `--elevation-raised` stays the inherited no-op. */\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.5), 0 2px 6px -2px oklch(0 0 0 / 0.34);\n\n  color-scheme: dark;\n}\n\n:root.light {\n  --surface-sunken: 0.93 0.006 264; /*                              #e6e8ec */\n  --surface-canvas: 0.958 0.004 264; /*                             #f0f1f4 */\n  --surface-raised: 0.988 0.003 264; /*                             #fafbfd */\n  --surface-overlay: 0.997 0.002 264; /*                            #fefefe */\n\n  /* Worst-case ratios against the DARKEST surface (sunken):\n     strong 14.6 · content 11.4 · muted 7.1 · subtle 4.7. */\n  --ink: 0.205 0.014 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.9;\n  --content-muted: var(--ink) / 0.75;\n  --content-subtle: var(--ink) / 0.62;\n  --content-on-accent: 0.999 0 0;\n\n  --fill-subtle: var(--ink) / 0.045;\n  --fill-muted: var(--ink) / 0.08;\n  --fill-strong: var(--ink) / 0.12;\n\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.16;\n  --edge-strong: var(--ink) / 0.47; /* 3:1 control boundary (measured 3.02) */\n  --edge-decor: var(--ink) / 0.28;\n\n  /* Brand teal, deeper here so it carries white ink and still reads as text.\n     ink-on-brand 7.10 · brand-on-canvas 6.29 · on its badge tint 4.64 */\n  --brand: 0.45 0.098 178.2; /*                                     #026455 */\n  --brand-hover: 0.4 0.09 178.2;\n  --brand-active: 0.36 0.082 178.2;\n\n  --ai: 0.47 0.195 285; /*                                          #563dc1 */\n  --ai-hover: 0.42 0.185 285;\n\n  --selected-bg: var(--brand) / 0.12;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.68 */\n  --selected-ink: 0.44 0.098 178.2; /*                              #036153 */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Same hues as dark at a lightness that clears AA on light surfaces.\n     Worst ratio in the set: 5.02. */\n  --status-success: 0.48 0.15 150; /*                               #007132 */\n  --status-info: 0.48 0.15 230; /*                                  #066788 */\n  --status-warning: 0.48 0.15 82; /*                                #795702 */\n  --status-attention: 0.48 0.15 50; /*                              #934302 */\n  --status-danger: 0.48 0.15 22; /*                                 #a12f35 */\n  --status-merged: 0.48 0.15 300; /*                                #6c44a4 */\n  --status-dormant: 0.54 0.015 264; /* darker than Midnight's — see @theme */\n\n  /* Host identity — same hues and chroma as Midnight, at a lower,\n     independently-tuned lightness, same reasoning as the rest of this\n     theme's restated blocks: light solves a different contrast problem, so\n     it gets its own numbers rather than Midnight's lifted bodily. Amber and\n     violet keep the same lightness offset off the shared 0.52 that they carry\n     in Midnight, for the same OKLab-separation reason. */\n  --host-rose: 0.52 0.16 355; /*                                       #ab366e */\n  --host-amber: 0.58 0.125 66; /*                                      #ab690e */\n  --host-lime: 0.52 0.155 118; /*                                      #637100 */\n  --host-cyan: 0.52 0.155 204; /*                                      #087780 */\n  --host-blue: 0.52 0.155 258; /*                                      #2766c0 */\n  --host-violet: 0.55 0.165 328; /*                                    #a247a1 */\n\n  /* Agent account identity — same hues as Midnight at a lower lightness. The\n     glyph set stays bold (3:1 is all a non-text mark needs). The ink set for\n     small text must reach 4.5:1 on the light surfaces, so amber, lime and cyan\n     go darker and shift a few degrees of hue to keep their distance from the\n     warning, success and brand colors at the lightness 4.5:1 needs. */\n  --account-rose: 0.55 0.22 352;\n  --account-amber: 0.58 0.124 72;\n  --account-lime: 0.55 0.13 125;\n  --account-cyan: 0.56 0.095 210;\n  --account-blue: 0.5 0.18 258;\n  --account-violet: 0.5 0.23 320;\n  --account-ink-rose: 0.545 0.22 352;\n  --account-ink-amber: 0.435 0.095 66;\n  --account-ink-lime: 0.51 0.122 121;\n  --account-ink-cyan: 0.5 0.075 218;\n  --account-ink-blue: 0.5 0.18 258;\n  --account-ink-violet: 0.5 0.23 320;\n\n  /* Channel ink flips to the icon's FRAME color, for dark-on-light legibility;\n     the mark trio repeats Midnight's values verbatim (brand artwork, not\n     themed). */\n  --channel-staging: 0.501 0.209 265;\n  --channel-staging-mark-hi: 0.958 0.021 246;\n  --channel-staging-mark-mid: 0.66 0.17 265;\n  --channel-staging-mark-deep: 0.561 0.15 265;\n  --channel-dev: 0.508 0.204 300;\n  --channel-dev-mark-hi: 0.961 0.024 309;\n  --channel-dev-mark-mid: 0.66 0.169 300;\n  --channel-dev-mark-deep: 0.56 0.15 300;\n  --channel-source: 0.346 0.079 45;\n  --channel-source-mark-hi: 0.955 0.032 69;\n  --channel-source-mark-mid: 0.66 0.167 53;\n  --channel-source-mark-deep: 0.56 0.145 52;\n\n  /* Lighter than the dark themes', and still a DARKENING wash: a scrim's job is\n     to push\n     the page back, which a pale overlay cannot do in either theme. */\n  --scrim: 0.2 0.012 264 / 0.5;\n\n  --diff-added: 0.48 0.15 150 / 0.12;\n  --diff-removed: 0.48 0.15 22 / 0.12;\n\n  /* Code-view highlights — mid-tones against the near-white plate, under\n     near-black ink. */\n  --code-selection: 0.605 0.09 178.8;\n  --code-find: 0.62 0.12 95;\n  --code-find-current: 0.63 0.15 40;\n  --code-highlight-ink: 0.15 0.012 264;\n\n  --lane-1: 0.52 0.15 150;\n  --lane-2: 0.52 0.15 195;\n  --lane-3: 0.52 0.15 240;\n  --lane-4: 0.52 0.15 285;\n  --lane-5: 0.52 0.15 330;\n  --lane-6: 0.52 0.15 15;\n  --lane-7: 0.52 0.15 60;\n  --lane-8: 0.52 0.15 105;\n\n  --provider-github: 0.278 0.012 248;\n  --provider-gitlab: 0.5 0.166 37;\n  --provider-jira: 0.45 0.171 263;\n  --provider-linear: 0.45 0.217 284;\n\n  /* Usage gauge — consumed is the DARKER of the pair on light. */\n  --usage-track: 0.788 0.017 264;\n  --usage-consumed: 0.424 0.073 180;\n  /* The neutral track already clears 3:1 for every status tone on light. */\n  --usage-track-toned: 0.788 0.017 264;\n\n  /* Light lifts by shadow, since the surface ramp runs out of headroom. */\n  --elevation-raised: 0 1px 2px oklch(0.2 0.02 264 / 0.06);\n  --elevation-overlay:\n    0 8px 24px -8px oklch(0.2 0.02 264 / 0.18), 0 2px 6px -2px oklch(0.2 0.02 264 / 0.1);\n\n  /* Light's text fields sit a step below the canvas, so a field and a track\n     read as recessed on the top bar. */\n  --field: var(--surface-sunken);\n\n  /* Light's ink is the dark end; the popover's track deepens a little past the\n     field step since nothing is whiter than the popover to lift the thumb into. */\n  --control-track: var(--ink) / 0.06;\n  --control-thumb-lift: 0%;\n  --control-thumb-lift-overlay: 0%;\n\n  /* Control track and thumb: lighter shadows, and an ink hairline in place of\n     black so the thumb's edge stays soft on the light track. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.08);\n  --control-thumb-shadow: 0 1px 2px oklch(0 0 0 / 0.14), 0 0 0 1px oklch(var(--ink) / 0.08);\n\n  color-scheme: light;\n}\n";
+// \0kepler:palette-css
+var _kepler_palette_css_default = "\n:root {\n  /* Neutral surfaces — monotonically lighter as elevation rises. */\n  --surface-sunken: 0.145 0.006 264; /* wells, inputs, code blocks   #090a0d */\n  --surface-canvas: 0.17 0.006 264; /* app background                #0e0f12 */\n  --surface-raised: 0.198 0.007 264; /* panels, cards, list surfaces #141619 */\n  --surface-overlay: 0.228 0.008 264; /* menus, popovers             #1b1c20 */\n\n  /* Ink — one color, four alpha steps. Worst-case ratios against the LIGHTEST\n     surface (overlay): strong 15.3 · content 11.4 · muted 7.2 · subtle 4.8. */\n  --ink: 0.965 0.004 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.85;\n  --content-muted: var(--ink) / 0.65;\n  --content-subtle: var(--ink) / 0.5;\n  --content-on-accent: var(--surface-sunken);\n\n  /* Fills — ink at low alpha, so they tint whatever they sit on. */\n  --fill-subtle: var(--ink) / 0.04;\n  --fill-muted: var(--ink) / 0.07;\n  --fill-strong: var(--ink) / 0.11;\n\n  /* Edges — `edge-strong` is the 3:1 control boundary (measured 3.00). */\n  --edge-subtle: var(--ink) / 0.08;\n  --edge: var(--ink) / 0.14;\n  --edge-strong: var(--ink) / 0.35;\n  /* Decorative line, between `edge` and `edge-strong`: visible on the canvas\n     without borrowing the control boundary's contrast contract. */\n  --edge-decor: var(--ink) / 0.22;\n\n  /* A sash's own element thickness and its (larger) grab/hover zone. The\n     hit-zone value is shared with the `Sash` primitive's panel-library\n     configuration — see the RESIZE HANDLES block below for why the two\n     must agree. */\n  --dock-tab-drop-line-size: 3px;\n  /* The line a Dashboard drag draws where the card would land. Thinner than\n     the dock's: it runs the length of a row, where 3px reads as a divider. */\n  --dashboard-drop-line-size: 2px;\n  --sash-size: 5px;\n  --sash-hit: 12px;\n  /* How long the pointer rests on a sash before it lights up. A sash sits\n     between two surfaces the pointer crosses constantly, and lighting up on\n     every pass reads as flicker; the delay is what makes the highlight mean\n     \"you could drag this\". */\n  --sash-hover-delay: 250ms;\n\n  /* Brand teal. Lighter than the previous #1f8f7c and paired with near-black\n     ink rather than white: white on the old teal measured 4.02:1, under the\n     AA floor, and no single teal can satisfy both \"readable as text on the\n     canvas\" (wants lighter) and \"readable under white ink\" (wants darker).\n     Dark ink resolves the conflict with one color instead of two.\n     ink-on-brand 6.68 · brand-on-canvas 6.47 · on its badge tint 4.59 */\n  --brand: 0.66 0.099 178.8; /*                                     #3fa693 */\n  --brand-hover: 0.71 0.106 178.8;\n  --brand-active: 0.61 0.092 178.8;\n  /* Solid brand surfaces and the ink on them. Raw aliases resolved at the point\n     of use, so Dark and Light follow their own `--brand`/`--content-on-accent`;\n     a custom theme overrides them when its text-safe brand cannot carry text. */\n  --brand-fill: var(--brand);\n  --brand-fill-hover: var(--brand-hover);\n  --brand-fill-active: var(--brand-active);\n  --content-on-brand: var(--content-on-accent);\n\n  /* AI purple. Higher chroma than the status ramp, and 15° off status-merged,\n     so the system's only two purples stay separable.\n     ai-on-canvas 6.11 · ink-on-ai 7.11 */\n  --ai: 0.7 0.185 285; /*                                           #968dfe */\n  --ai-hover: 0.75 0.175 285;\n\n  /* Selection & focus — brand-tinted. The ink is text on the wash: a step\n     lighter than brand, because a segmented control lays the wash over its own\n     track, and brand there falls under 4.5:1 over an overlay.\n     on the wash, worst over the track 4.67 */\n  --selected-bg: var(--brand) / 0.14;\n  --selected-border: var(--brand) / 0.45;\n  --selected-ink: 0.69 0.099 178.8; /*                              #4aaf9c */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Status ramp — identical L and C, hue only. Worst ratio in the set: 6.39. */\n  --status-success: 0.72 0.155 150; /* running, open, passing       #4fbf6e */\n  --status-info: 0.72 0.155 230; /* building, in progress, info   #04b4ec */\n  --status-warning: 0.72 0.155 82; /* review, spawning, degraded    #d29a08 */\n  --status-attention: 0.72 0.155 50; /* BLOCKED ON YOU              #f08440 */\n  --status-danger: 0.72 0.155 22; /* errored, closed, failed        #f67878 */\n  --status-merged: 0.72 0.155 300; /* merged PR, finished issue, done task #b48cf6 */\n  --status-dormant: 0.58 0.01 264; /* disconnected-session ring — see @theme */\n\n  /* Host identity — six hues spread around the wheel at ~0.125-0.165 chroma\n     (raised from a muted 0.09 that read as six near-identical pastels), each\n     placed and measured to clear an OKLab distance from brand/ai/every status\n     hue (checked by a dedicated test) rather than eyeballed. Amber sits in\n     the narrow gap between status-attention and status-warning, and violet in\n     the narrow gap between ai and status-merged; both borrow extra separation\n     from lightness (off the shared 0.72) where hue alone can't clear the\n     floor, which is also what keeps all six apart under red-green color\n     vision deficiency. Dark inherits these unchanged (same reasoning as the\n     status ramp): both dark themes solve the same contrast problem at the\n     same amplitude, so a second set of numbers here would only be Midnight's\n     copied by hand. */\n  --host-rose: 0.72 0.16 355; /*                                       #f075aa */\n  --host-amber: 0.78 0.125 66; /*                                      #eda65a */\n  --host-lime: 0.72 0.155 118; /*                                      #9db128 */\n  --host-cyan: 0.72 0.155 204; /*                                      #0fbac7 */\n  --host-blue: 0.72 0.155 258; /*                                      #69a5fe */\n  --host-violet: 0.75 0.165 328; /*                                    #e585e2 */\n\n  /* Agent account identity, in two sets of the same six hues. The bold\n     `--account-*` set tints a ~14px glyph and the picker swatch: it needs\n     enough chroma to read against muted-gray neighbours and only 3:1 as a\n     non-text mark. The `--account-ink-*` set colors the small account name and\n     address in the session hover card, which needs 4.5:1 on every surface,\n     the overlay included; in light that forces a darker ink, so the two sets\n     diverge there and are identical here.\n     Chroma is pushed to what sRGB holds at each lightness (hues differ, so\n     cyan stays quieter than violet) and hues are moved off the status ramp,\n     brand and ai (rose leans pink, away from danger) because an account\n     color must never read as state. Dark inherits both sets unchanged. */\n  --account-rose: 0.72 0.2 352;\n  --account-amber: 0.8 0.16 72;\n  --account-lime: 0.8 0.19 125;\n  --account-cyan: 0.78 0.125 210;\n  --account-blue: 0.67 0.175 258;\n  --account-violet: 0.7 0.23 320;\n  --account-ink-rose: 0.72 0.2 352;\n  --account-ink-amber: 0.8 0.16 72;\n  --account-ink-lime: 0.8 0.19 125;\n  --account-ink-cyan: 0.78 0.125 210;\n  --account-ink-blue: 0.67 0.175 258;\n  --account-ink-violet: 0.7 0.23 320;\n\n  /* Channel badge/mark — mirrors the channel icon tints (shared table in\n     scripts/_channel-tints.mjs): staging blue, dev purple, source rust.\n     The ink is the icon's PILL color, its brightest element, which is what a\n     small dark-surface badge wants; the mark trio recolors the title-bar\n     mark's own gradient stops (both its highlights to `-mark-hi`, both its\n     deep stops to `-mark-deep`) and is repeated verbatim in light below,\n     since it is brand artwork rather than a themed surface. */\n  --channel-staging: 0.674 0.172 264; /* pill  #5F91FF */\n  --channel-staging-mark-hi: 0.958 0.021 246; /* #E6F3FF */\n  --channel-staging-mark-mid: 0.66 0.17 265; /* #5E8CF9 */\n  --channel-staging-mark-deep: 0.561 0.15 265; /* #486FCC */\n  --channel-dev: 0.728 0.168 301; /* pill  #B98BFF */\n  --channel-dev-mark-hi: 0.961 0.024 309; /* #F7EEFF */\n  --channel-dev-mark-mid: 0.66 0.169 300; /* #A376E9 */\n  --channel-dev-mark-deep: 0.56 0.15 300; /* #835CBE */\n  --channel-source: 0.779 0.127 63; /* pill  #F0A45A */\n  --channel-source-mark-hi: 0.955 0.032 69; /* #FFEDDA */\n  --channel-source-mark-mid: 0.66 0.167 53; /* #DE6F00 */\n  --channel-source-mark-deep: 0.56 0.145 52; /* #B45600 */\n\n  /* Modal scrim — darkens toward the canvas hue rather than to neutral black,\n     so a dialog's backdrop stays part of the same world. */\n  --scrim: 0.08 0.008 264 / 0.72;\n\n  /* Diff washes — low-alpha line backgrounds, hue-matched to the status ramp. */\n  --diff-added: 0.72 0.155 150 / 0.14;\n  --diff-removed: 0.72 0.155 22 / 0.14;\n\n  /* Code-view highlights — opaque so the measured contrast is the real one. Teal\n     for selection (the brand hue), amber for find, orange for the current match;\n     the ink is white because the highlights are mid-tone and light grey ink\n     cannot be 4.5:1 on a background that is also 3:1 from the plate. */\n  --code-selection: 0.525 0.09 178.8;\n  --code-find: 0.535 0.12 95;\n  --code-find-current: 0.55 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Commit-graph lanes — 8 hues, 45° apart, one L and C. */\n  --lane-1: 0.74 0.15 150;\n  --lane-2: 0.74 0.15 195;\n  --lane-3: 0.74 0.15 240;\n  --lane-4: 0.74 0.15 285;\n  --lane-5: 0.74 0.15 330;\n  --lane-6: 0.74 0.15 15;\n  --lane-7: 0.74 0.15 60;\n  --lane-8: 0.74 0.15 105;\n\n  /* Providers — external brand colors, lifted to readable lightness on the\n     dark themes. */\n  --provider-github: 0.857 0.014 248;\n  --provider-gitlab: 0.753 0.145 37;\n  --provider-jira: 0.73 0.116 258;\n  --provider-linear: 0.772 0.115 294;\n\n  /* Usage gauge — consumed is the BRIGHTER of the pair on the dark themes. */\n  --usage-track: 0.464 0.019 264;\n  --usage-consumed: 0.825 0.126 180;\n  /* Track for bars filled with a status tone. The neutral track is too light for\n     a status fill to clear 3:1 against it on the dark themes, so this one is\n     darker; Dark inherits it, and it clears 3:1 for all three tones on both. */\n  --usage-track-toned: 0.42 0.019 264;\n\n  /* Type stacks. The system stack is the right voice for a desktop tool: it is\n     the reader's own UI face, it needs no network, and it renders at the\n     platform's own hinting. */\n  --sans-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  --mono-font: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;\n\n  /* Elevation — the dark themes lift by lightness, so shadows only anchor true\n     overlays. */\n  --elevation-raised: 0 0 #0000;\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.7), 0 2px 6px -2px oklch(0 0 0 / 0.5);\n\n  /* The selected segment's fill. A separate token from the overlay surface so\n     a theme can lift its controls without also lifting every menu and popover;\n     by default it is the overlay, resolved where it is used, so Dark, Light and\n     every data theme inherit their own overlay. */\n  --control-thumb: var(--surface-overlay);\n\n  /* Scrollbar colors. Separate tokens so a theme can color its scrollbars\n     without moving control borders or the faintest text; by default they\n     resolve to the edge and subtle-text steps where they are used, so every\n     theme inherits its own, like control-thumb. The track is a raw triplet\n     because it is transparent unless a theme gives it a color. */\n  --scrollbar-thumb: var(--edge-strong);\n  --scrollbar-thumb-hover: var(--content-subtle);\n  --scrollbar-track: 0 0 0 / 0;\n\n  /* A text field's fill, shared by inputs, form selects and the segmented\n     track; the canvas on the dark themes. */\n  --field: var(--surface-canvas);\n\n  /* The shade a segmented track lays over an overlay surface (menu, popover),\n     where the field fill would sit two steps below the surface. Black at 10%\n     scales each channel by 0.9. Dark inherits it. */\n  --control-track: 0 0 0 / 0.1;\n\n  /* How much ink the selected segment mixes in so it stands off the field-fill\n     track. A popover takes a little more because its thumb shares the popover's\n     fill. */\n  --control-thumb-lift: 2.5%;\n  --control-thumb-lift-overlay: 5%;\n\n  /* Control track and thumb (segmented control). The track is a well: the field\n     fill (or the overlay shade) with an inset shadow. The thumb is raised by a\n     1px top highlight, a drop shadow and a hairline of black that keeps its\n     edge on the track. Dark inherits these, and so does every data theme by its\n     base's polarity. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.45);\n  --control-thumb-shadow:\n    inset 0 1px 0 oklch(var(--ink) / 0.1), 0 1px 2px oklch(0 0 0 / 0.55),\n    0 0 0 1px oklch(0 0 0 / 0.35);\n\n  color-scheme: dark;\n}\n\n:root.dark {\n  /* Midnight's ramp lifted bodily — same hue, same chroma, same step sizes. */\n  --surface-sunken: 0.205 0.006 264; /* wells, inputs, code blocks   #16171a */\n  --surface-canvas: 0.232 0.006 264; /* app background               #1c1d20 */\n  --surface-raised: 0.262 0.007 264; /* panels, cards, list surfaces #232528 */\n  --surface-overlay: 0.295 0.008 264; /* menus, popovers             #2a2d31 */\n\n  /* Dark's ramp sits higher, so both lifts take a little more ink. */\n  --control-thumb-lift: 3%;\n  --control-thumb-lift-overlay: 6%;\n\n  /* Ink drops with the surfaces rather than holding at Midnight's near-white, which\n     is what keeps this a softer theme instead of merely a greyer one. Worst-case\n     ratios against the LIGHTEST surface (overlay): strong 10.9 · content 8.6 ·\n     muted 6.3 · subtle 4.7. `--content-strong` and `--content-on-accent` are\n     inherited: both are written against tokens this block overrides. */\n  --ink: 0.92 0.004 264;\n  --content: var(--ink) / 0.87;\n  --content-muted: var(--ink) / 0.71;\n  --content-subtle: var(--ink) / 0.58;\n\n  /* Fills — alphas raised to hold Midnight's composited lightness delta (0.039 /\n     0.065 / 0.101), not Midnight's alphas, which would read thinner up here. */\n  --fill-subtle: var(--ink) / 0.05;\n  --fill-muted: var(--ink) / 0.085;\n  --fill-strong: var(--ink) / 0.13;\n\n  /* Edges — same treatment. `edge-strong` keeps the 3:1 control boundary\n     (measured 3.24) and is the one value here tuned to a ratio rather than to\n     Midnight's appearance. */\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.17;\n  --edge-strong: var(--ink) / 0.41;\n  --edge-decor: var(--ink) / 0.26;\n\n  /* Brand teal, lifted above Midnight's #3fa693, which would sit too close to\n     these lighter surfaces and to its own badge tint over them. Same hue and\n     the same near-black ink on top, so the action color is recognisably the\n     product's. brand-on-canvas 7.36 · ink-on-brand 7.83 · on its badge tint 4.58 */\n  --brand: 0.73 0.106 178.8; /*                                      #4ebda9 */\n  --brand-hover: 0.78 0.112 178.8;\n  --brand-active: 0.68 0.1 178.8;\n\n  /* AI purple, lifted so it still reads as text on its own badge tint over\n     these surfaces. ai-on-canvas 7.34 · ink-on-ai 7.81 · on its badge tint 4.57 */\n  --ai: 0.75 0.185 285; /*                                           #a6a1fe */\n  --ai-hover: 0.8 0.175 285;\n\n  /* Selection reads off a lighter brand, so the tint needs a touch more of it\n     to separate from a lighter row underneath. */\n  --selected-bg: var(--brand) / 0.16;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.60 */\n  --selected-ink: 0.77 0.106 178.8; /*                              #5ccab5 */\n\n  /* The six status hues are Midnight's, unchanged (AI purple is lifted above):\n     all of them still clear their floors here (worst in the status set 5.19), and a\n     second ramp at a second lightness is exactly the duplication the system\n     exists to remove. The dormant ring is the one exception — it is tuned\n     AGAINST its surface by construction, so it has to move with it (3.94, beside\n     Midnight's 3.96). */\n  --status-dormant: 0.63 0.01 264;\n\n  /* Scrim lightens with the canvas it dims. Still a darkening wash — a scrim\n     that merely greys the page cannot push it back. */\n  --scrim: 0.12 0.008 264 / 0.7;\n\n  /* Diff washes — same hues, a little more of them, since a 14% tint over a\n     lighter line is a fainter stripe. */\n  --diff-added: 0.72 0.155 150 / 0.15;\n  --diff-removed: 0.72 0.155 22 / 0.15;\n\n  /* Code-view highlights — the plate is lighter here, so the highlights rise with\n     it and the window that satisfies both 3:1 from the plate and 4.5:1 under\n     white ink narrows to about 0.015 of lightness. */\n  --code-selection: 0.545 0.09 178.8;\n  --code-find: 0.555 0.12 95;\n  --code-find-current: 0.57 0.15 40;\n  --code-highlight-ink: 1 0 264;\n\n  /* Usage gauge — the track is an opaque grey read against the panel it sits\n     on, so it rises with the panel; consumed is Midnight's and still clears the\n     3:1 the pair owes each other. */\n  --usage-track: 0.5 0.019 264;\n\n  /* Overlay shadow, softened. Elevation is lightness here as on Midnight, so the\n     shadow only anchors true overlays — and Midnight's 0.7 black, dropped on a\n     canvas this much lighter, reads as a hole cut in the page rather than as a\n     lift. `--elevation-raised` stays the inherited no-op. */\n  --elevation-overlay: 0 8px 24px -8px oklch(0 0 0 / 0.5), 0 2px 6px -2px oklch(0 0 0 / 0.34);\n\n  color-scheme: dark;\n}\n\n:root.light {\n  --surface-sunken: 0.93 0.006 264; /*                              #e6e8ec */\n  --surface-canvas: 0.958 0.004 264; /*                             #f0f1f4 */\n  --surface-raised: 0.988 0.003 264; /*                             #fafbfd */\n  --surface-overlay: 0.997 0.002 264; /*                            #fefefe */\n\n  /* Worst-case ratios against the DARKEST surface (sunken):\n     strong 14.6 · content 11.4 · muted 7.1 · subtle 4.7. */\n  --ink: 0.205 0.014 264;\n  --content-strong: var(--ink);\n  --content: var(--ink) / 0.9;\n  --content-muted: var(--ink) / 0.75;\n  --content-subtle: var(--ink) / 0.62;\n  --content-on-accent: 0.999 0 0;\n\n  --fill-subtle: var(--ink) / 0.045;\n  --fill-muted: var(--ink) / 0.08;\n  --fill-strong: var(--ink) / 0.12;\n\n  --edge-subtle: var(--ink) / 0.1;\n  --edge: var(--ink) / 0.16;\n  --edge-strong: var(--ink) / 0.47; /* 3:1 control boundary (measured 3.02) */\n  --edge-decor: var(--ink) / 0.28;\n\n  /* Brand teal, deeper here so it carries white ink and still reads as text.\n     ink-on-brand 7.10 · brand-on-canvas 6.29 · on its badge tint 4.64 */\n  --brand: 0.45 0.098 178.2; /*                                     #026455 */\n  --brand-hover: 0.4 0.09 178.2;\n  --brand-active: 0.36 0.082 178.2;\n\n  --ai: 0.47 0.195 285; /*                                          #563dc1 */\n  --ai-hover: 0.42 0.185 285;\n\n  --selected-bg: var(--brand) / 0.12;\n  --selected-border: var(--brand) / 0.5;\n  /* on the wash, worst over the track 4.68 */\n  --selected-ink: 0.44 0.098 178.2; /*                              #036153 */\n  --focus-ring: var(--brand) / 0.9;\n\n  /* Same hues as dark at a lightness that clears AA on light surfaces.\n     Worst ratio in the set: 5.02. */\n  --status-success: 0.48 0.15 150; /*                               #007132 */\n  --status-info: 0.48 0.15 230; /*                                  #066788 */\n  --status-warning: 0.48 0.15 82; /*                                #795702 */\n  --status-attention: 0.48 0.15 50; /*                              #934302 */\n  --status-danger: 0.48 0.15 22; /*                                 #a12f35 */\n  --status-merged: 0.48 0.15 300; /*                                #6c44a4 */\n  --status-dormant: 0.54 0.015 264; /* darker than Midnight's — see @theme */\n\n  /* Host identity — same hues and chroma as Midnight, at a lower,\n     independently-tuned lightness, same reasoning as the rest of this\n     theme's restated blocks: light solves a different contrast problem, so\n     it gets its own numbers rather than Midnight's lifted bodily. Amber and\n     violet keep the same lightness offset off the shared 0.52 that they carry\n     in Midnight, for the same OKLab-separation reason. */\n  --host-rose: 0.52 0.16 355; /*                                       #ab366e */\n  --host-amber: 0.58 0.125 66; /*                                      #ab690e */\n  --host-lime: 0.52 0.155 118; /*                                      #637100 */\n  --host-cyan: 0.52 0.155 204; /*                                      #087780 */\n  --host-blue: 0.52 0.155 258; /*                                      #2766c0 */\n  --host-violet: 0.55 0.165 328; /*                                    #a247a1 */\n\n  /* Agent account identity — same hues as Midnight at a lower lightness. The\n     glyph set stays bold (3:1 is all a non-text mark needs). The ink set for\n     small text must reach 4.5:1 on the light surfaces, so amber, lime and cyan\n     go darker and shift a few degrees of hue to keep their distance from the\n     warning, success and brand colors at the lightness 4.5:1 needs. */\n  --account-rose: 0.55 0.22 352;\n  --account-amber: 0.58 0.124 72;\n  --account-lime: 0.55 0.13 125;\n  --account-cyan: 0.56 0.095 210;\n  --account-blue: 0.5 0.18 258;\n  --account-violet: 0.5 0.23 320;\n  --account-ink-rose: 0.545 0.22 352;\n  --account-ink-amber: 0.435 0.095 66;\n  --account-ink-lime: 0.51 0.122 121;\n  --account-ink-cyan: 0.5 0.075 218;\n  --account-ink-blue: 0.5 0.18 258;\n  --account-ink-violet: 0.5 0.23 320;\n\n  /* Channel ink flips to the icon's FRAME color, for dark-on-light legibility;\n     the mark trio repeats Midnight's values verbatim (brand artwork, not\n     themed). */\n  --channel-staging: 0.501 0.209 265;\n  --channel-staging-mark-hi: 0.958 0.021 246;\n  --channel-staging-mark-mid: 0.66 0.17 265;\n  --channel-staging-mark-deep: 0.561 0.15 265;\n  --channel-dev: 0.508 0.204 300;\n  --channel-dev-mark-hi: 0.961 0.024 309;\n  --channel-dev-mark-mid: 0.66 0.169 300;\n  --channel-dev-mark-deep: 0.56 0.15 300;\n  --channel-source: 0.346 0.079 45;\n  --channel-source-mark-hi: 0.955 0.032 69;\n  --channel-source-mark-mid: 0.66 0.167 53;\n  --channel-source-mark-deep: 0.56 0.145 52;\n\n  /* Lighter than the dark themes', and still a DARKENING wash: a scrim's job is\n     to push\n     the page back, which a pale overlay cannot do in either theme. */\n  --scrim: 0.2 0.012 264 / 0.5;\n\n  --diff-added: 0.48 0.15 150 / 0.12;\n  --diff-removed: 0.48 0.15 22 / 0.12;\n\n  /* Code-view highlights — mid-tones against the near-white plate, under\n     near-black ink. */\n  --code-selection: 0.605 0.09 178.8;\n  --code-find: 0.62 0.12 95;\n  --code-find-current: 0.63 0.15 40;\n  --code-highlight-ink: 0.15 0.012 264;\n\n  --lane-1: 0.52 0.15 150;\n  --lane-2: 0.52 0.15 195;\n  --lane-3: 0.52 0.15 240;\n  --lane-4: 0.52 0.15 285;\n  --lane-5: 0.52 0.15 330;\n  --lane-6: 0.52 0.15 15;\n  --lane-7: 0.52 0.15 60;\n  --lane-8: 0.52 0.15 105;\n\n  --provider-github: 0.278 0.012 248;\n  --provider-gitlab: 0.5 0.166 37;\n  --provider-jira: 0.45 0.171 263;\n  --provider-linear: 0.45 0.217 284;\n\n  /* Usage gauge — consumed is the DARKER of the pair on light. */\n  --usage-track: 0.788 0.017 264;\n  --usage-consumed: 0.424 0.073 180;\n  /* The neutral track already clears 3:1 for every status tone on light. */\n  --usage-track-toned: 0.788 0.017 264;\n\n  /* Light lifts by shadow, since the surface ramp runs out of headroom. */\n  --elevation-raised: 0 1px 2px oklch(0.2 0.02 264 / 0.06);\n  --elevation-overlay:\n    0 8px 24px -8px oklch(0.2 0.02 264 / 0.18), 0 2px 6px -2px oklch(0.2 0.02 264 / 0.1);\n\n  /* Light's text fields sit a step below the canvas, so a field and a track\n     read as recessed on the top bar. */\n  --field: var(--surface-sunken);\n\n  /* Light's ink is the dark end; the popover's track deepens a little past the\n     field step since nothing is whiter than the popover to lift the thumb into. */\n  --control-track: var(--ink) / 0.06;\n  --control-thumb-lift: 0%;\n  --control-thumb-lift-overlay: 0%;\n\n  /* Control track and thumb: lighter shadows, and an ink hairline in place of\n     black so the thumb's edge stays soft on the light track. */\n  --control-track-shadow: inset 0 1px 2px oklch(0 0 0 / 0.08);\n  --control-thumb-shadow: 0 1px 2px oklch(0 0 0 / 0.14), 0 0 0 1px oklch(var(--ink) / 0.08);\n\n  color-scheme: light;\n}\n";
 
-//#endregion
-//#region src/ui/themes/kepler-syntax.json
+// src/ui/themes/kepler-syntax.json
 var dark = {
 	"foreground": "#c1c4c9",
 	"operator": "#c1c4c9",
@@ -17999,8 +18008,7 @@ var light = {
 	"tag.component.jsx": "#047079"
 };
 
-//#endregion
-//#region src/backend/themes/theme-sources.ts
+// src/backend/themes/theme-sources.ts
 const BUNDLED_FAMILIES = Object.values([]);
 /** Kepler's own syntax palette, which a theme naming no highlights theme draws code in. */
 const KEPLER_SYNTAX = {
@@ -18020,8 +18028,7 @@ function bundledThemeIds() {
 	return bundledIds;
 }
 
-//#endregion
-//#region src/shared/theme/token-guide.ts
+// src/shared/theme/token-guide.ts
 /**
 * Every themeable token by role, for anyone writing a theme without reading
 * the design system first. A test holds each token to exactly one group, so a
@@ -18065,6 +18072,16 @@ const TOKEN_GUIDE = [
 			"edge",
 			"edge-strong",
 			"edge-decor"
+		]
+	},
+	{
+		id: "scrollbars",
+		title: "Scrollbars",
+		description: "scrollbar-thumb is the thumb at rest and must reach 3:1 over the track on canvas and raised, so overflow stays visible. scrollbar-thumb-hover is the thumb under the pointer and scrollbar-track the track behind it. Unset, they follow edge-strong, content-subtle and a transparent track, and each accepts an alpha over ink like the edges.",
+		tokens: [
+			"scrollbar-thumb",
+			"scrollbar-thumb-hover",
+			"scrollbar-track"
 		]
 	},
 	{
@@ -18199,8 +18216,7 @@ const TOKEN_GUIDE = [
 	}
 ];
 
-//#endregion
-//#region node_modules/jsonc-parser/lib/esm/impl/scanner.js
+// node_modules/jsonc-parser/lib/esm/impl/scanner.js
 /**
 * Creates a JSON scanner on the given text.
 * If ignoreTrivia is set, whitespaces or comments are ignored.
@@ -18580,8 +18596,7 @@ var CharacterCodes;
 	CharacterCodes[CharacterCodes["tab"] = 9] = "tab";
 })(CharacterCodes || (CharacterCodes = {}));
 
-//#endregion
-//#region node_modules/jsonc-parser/lib/esm/impl/string-intern.js
+// node_modules/jsonc-parser/lib/esm/impl/string-intern.js
 const cachedSpaces = new Array(20).fill(0).map((_, index) => {
 	return " ".repeat(index);
 });
@@ -18611,8 +18626,7 @@ const cachedBreakLinesWithSpaces = {
 	}
 };
 
-//#endregion
-//#region node_modules/jsonc-parser/lib/esm/impl/parser.js
+// node_modules/jsonc-parser/lib/esm/impl/parser.js
 var ParseOptions;
 (function(ParseOptions) {
 	ParseOptions.DEFAULT = { allowTrailingComma: false };
@@ -18859,8 +18873,7 @@ function visit(text, visitor, options = ParseOptions.DEFAULT) {
 	return true;
 }
 
-//#endregion
-//#region node_modules/jsonc-parser/lib/esm/main.js
+// node_modules/jsonc-parser/lib/esm/main.js
 var ScanError;
 (function(ScanError) {
 	ScanError[ScanError["None"] = 0] = "None";
@@ -18937,8 +18950,7 @@ function printParseErrorCode(code) {
 	return "<unknown ParseErrorCode>";
 }
 
-//#endregion
-//#region src/backend/themes/load-user-themes.ts
+// src/backend/themes/load-user-themes.ts
 const BUILT_IN_IDS = new Set(BASE_THEMES);
 const PARSE_ERROR_WORDS = {
 	InvalidSymbol: "Unexpected character",
@@ -19011,8 +19023,7 @@ function parseFamily(file, text) {
 	};
 }
 
-//#endregion
-//#region src/backend/themes/validate-theme.ts
+// src/backend/themes/validate-theme.ts
 function noticeMessage(notice) {
 	switch (notice.kind) {
 		case "newer-version": return `The file says it is a newer format than ${2}; fields this version does not know are ignored. Use schemaVersion ${2}.`;
@@ -19156,9 +19167,8 @@ function inspectThemeFamily(text, { file = "theme.json", takenIds }) {
 	};
 }
 
-//#endregion
-//#region src/backend/themes/theme-check-entry.ts
-const version = "0.14.0";
+// src/backend/themes/theme-check-entry.ts
+const version = "0.15.0";
 function checkThemeFamily(text) {
 	const { result, themes: resolved } = inspectThemeFamily(text, { takenIds: /* @__PURE__ */ new Map() });
 	const palettes = builtInThemePalettes();
@@ -19187,5 +19197,4 @@ function checkThemeFamily(text) {
 	};
 }
 
-//#endregion
 export { checkThemeFamily, version };
