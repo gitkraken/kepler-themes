@@ -1,0 +1,263 @@
+{
+  "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
+  "schemaVersion": 2,
+  "name": "Aurora",
+  "version": "1.0.0",
+  "author": "Roberto Vizcarra",
+  "description": "The northern lights over a polar night and its dawn: yellow-green aurora actions and violet fringes across an indigo night sky and a rose daybreak.",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "aurora-borealis",
+      "name": "Aurora Borealis",
+      "extends": "midnight",
+      "colors": {
+        "surface-sunken": "oklch(0.135 0.055 272)",
+        "surface-canvas": "oklch(0.16 0.06 274)",
+        "surface-raised": "oklch(0.2 0.065 277)",
+        "surface-overlay": "oklch(0.24 0.07 280)",
+        "ink": "oklch(0.95 0.018 270)",
+        "content-subtle": 0.56,
+        "fill-subtle": "oklch(0.85 0.15 145 / 0.06)",
+        "fill-muted": "oklch(0.85 0.15 145 / 0.1)",
+        "fill-strong": "oklch(0.85 0.15 145 / 0.15)",
+        "edge-subtle": "oklch(0.74 0.12 262 / 0.14)",
+        "edge": "oklch(0.74 0.12 262 / 0.26)",
+        "edge-strong": "oklch(0.74 0.12 262 / 0.55)",
+        "edge-decor": "oklch(0.74 0.12 262 / 0.38)",
+        "brand": "oklch(0.86 0.19 145)",
+        "brand-hover": "oklch(0.9 0.17 145)",
+        "brand-active": "oklch(0.8 0.19 145)",
+        "content-on-brand": "oklch(0.17 0.04 145)",
+        "ai": "oklch(0.76 0.17 315)",
+        "ai-hover": "oklch(0.81 0.16 315)",
+        "selected-bg": 0.16,
+        "selected-border": 0.55,
+        "selected-ink": "oklch(0.88 0.17 145)",
+        "lane-1": "oklch(0.76 0.14 145)",
+        "lane-2": "oklch(0.76 0.14 190)",
+        "lane-3": "oklch(0.76 0.14 235)",
+        "lane-4": "oklch(0.76 0.14 280)",
+        "lane-5": "oklch(0.76 0.14 325)",
+        "lane-6": "oklch(0.76 0.14 10)",
+        "lane-7": "oklch(0.76 0.14 55)",
+        "lane-8": "oklch(0.76 0.14 100)",
+        "scrim": "oklch(0.08 0.05 274 / 0.72)",
+        "diff-added": "oklch(0.72 0.155 150 / 0.22)",
+        "diff-removed": "oklch(0.72 0.155 22 / 0.22)",
+        "code-selection": "oklch(0.52 0.11 145)"
+      },
+      "terminal": {
+        "background": "#03051e",
+        "foreground": "#d4d0e6",
+        "cursor": "#76f17e",
+        "selection": "#3a2f63",
+        "ansi": [
+          "#1d1a33",
+          "#ff7a90",
+          "#7cf08a",
+          "#f0d870",
+          "#6cb8ff",
+          "#d99cff",
+          "#4fe0d6",
+          "#d8d4ea",
+          "#8a85ab",
+          "#ff9aaa",
+          "#a6f7ae",
+          "#f7e7a0",
+          "#9cd0ff",
+          "#e8bdff",
+          "#8aefe6",
+          "#f6f4fc"
+        ]
+      },
+      "syntax": {
+        "tokens": {
+          "foreground": "#d4d0e6",
+          "primary": "#d4d0e6",
+          "embedded": "#d4d0e6",
+          "label": "#d4d0e6",
+          "text.jsx": "#d4d0e6",
+          "operator": "#a9a4c6",
+          "punctuation": "#a9a4c6",
+          "punctuation.delimiter.html": "#a9a4c6",
+          "punctuation.delimiter.jsx": "#a9a4c6",
+          "punctuation.markup": "#a9a4c6",
+          "comment": {
+            "color": "#8f8ab0",
+            "font_style": "italic"
+          },
+          "hint": "#8f8ab0",
+          "predictive": "#8f8ab0",
+          "keyword": "#d99cff",
+          "keyword.jsdoc": {
+            "font_style": "italic"
+          },
+          "preproc": "#d99cff",
+          "tag": "#d99cff",
+          "string": "#9cf08a",
+          "text.literal": "#9cf08a",
+          "link_text": "#9cf08a",
+          "diff.plus": "#9cf08a",
+          "diff.minus": "#ff8fa0",
+          "function": "#6cd4ff",
+          "constructor": "#6cd4ff",
+          "attribute": "#6cd4ff",
+          "link_uri": "#6cd4ff",
+          "type": "#4fe0d6",
+          "type.jsdoc": {
+            "font_style": "italic"
+          },
+          "namespace": "#4fe0d6",
+          "enum": "#4fe0d6",
+          "selector": "#4fe0d6",
+          "number": "#ff9ec7",
+          "boolean": "#ff9ec7",
+          "constant": "#ff9ec7",
+          "constant.builtin": "#ff9ec7",
+          "variant": "#ff9ec7",
+          "variable": "#ece9f7",
+          "property": "#b8c4ff",
+          "emphasis": {
+            "color": "#d4d0e6",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "#ece9f7",
+            "font_weight": 700
+          },
+          "title": {
+            "color": "#9cf08a",
+            "font_weight": 700
+          }
+        }
+      }
+    },
+    {
+      "id": "aurora-dawn",
+      "name": "Aurora Dawn",
+      "extends": "light",
+      "colors": {
+        "surface-sunken": "oklch(0.91 0.04 348)",
+        "surface-canvas": "oklch(0.94 0.034 345)",
+        "surface-raised": "oklch(0.968 0.022 340)",
+        "surface-overlay": "oklch(0.99 0.01 335)",
+        "ink": "oklch(0.22 0.045 325)",
+        "content-subtle": 0.64,
+        "fill-subtle": "oklch(0.45 0.13 140 / 0.05)",
+        "fill-muted": "oklch(0.45 0.13 140 / 0.085)",
+        "fill-strong": "oklch(0.45 0.13 140 / 0.13)",
+        "edge-subtle": "oklch(0.42 0.09 345 / 0.12)",
+        "edge": "oklch(0.42 0.09 345 / 0.2)",
+        "edge-strong": "oklch(0.42 0.09 345 / 0.62)",
+        "edge-decor": "oklch(0.42 0.09 345 / 0.34)",
+        "brand": "oklch(0.43 0.14 140)",
+        "brand-hover": "oklch(0.39 0.13 140)",
+        "brand-active": "oklch(0.35 0.12 140)",
+        "ai": "oklch(0.47 0.2 315)",
+        "ai-hover": "oklch(0.42 0.19 315)",
+        "selected-ink": "oklch(0.41 0.135 140)",
+        "account-ink-rose": "oklch(0.52 0.2 352)",
+        "account-ink-lime": "oklch(0.48 0.115 121)",
+        "account-ink-cyan": "oklch(0.48 0.075 218)",
+        "lane-1": "oklch(0.52 0.14 145)",
+        "lane-2": "oklch(0.52 0.14 190)",
+        "lane-3": "oklch(0.52 0.14 235)",
+        "lane-4": "oklch(0.52 0.14 280)",
+        "lane-5": "oklch(0.52 0.14 325)",
+        "lane-6": "oklch(0.52 0.14 10)",
+        "lane-7": "oklch(0.52 0.14 55)",
+        "lane-8": "oklch(0.52 0.14 100)",
+        "scrim": "oklch(0.22 0.045 345 / 0.5)",
+        "diff-added": "oklch(0.48 0.15 150 / 0.14)",
+        "diff-removed": "oklch(0.48 0.15 22 / 0.14)",
+        "code-selection": "oklch(0.62 0.11 140)"
+      },
+      "terminal": {
+        "background": "#fce8f2",
+        "foreground": "#2c2438",
+        "cursor": "#186100",
+        "selection": "#e0cfe8",
+        "ansi": [
+          "#231d2e",
+          "#b0243f",
+          "#2a7428",
+          "#7a5a00",
+          "#1f5fae",
+          "#8a2fa8",
+          "#0b6f7a",
+          "#d6d0de",
+          "#5f5770",
+          "#c02c48",
+          "#2c6e24",
+          "#6f5200",
+          "#2058a8",
+          "#7c2a98",
+          "#0a6670",
+          "#f7f4f9"
+        ]
+      },
+      "syntax": {
+        "tokens": {
+          "foreground": "#2c2438",
+          "primary": "#2c2438",
+          "embedded": "#2c2438",
+          "label": "#2c2438",
+          "text.jsx": "#2c2438",
+          "operator": "#5a5068",
+          "punctuation": "#5a5068",
+          "punctuation.delimiter.html": "#5a5068",
+          "punctuation.delimiter.jsx": "#5a5068",
+          "punctuation.markup": "#5a5068",
+          "comment": {
+            "color": "#665b78",
+            "font_style": "italic"
+          },
+          "hint": "#665b78",
+          "predictive": "#665b78",
+          "keyword": "#7a2fb0",
+          "keyword.jsdoc": {
+            "font_style": "italic"
+          },
+          "preproc": "#7a2fb0",
+          "tag": "#7a2fb0",
+          "string": "#2f6f1f",
+          "text.literal": "#2f6f1f",
+          "link_text": "#2f6f1f",
+          "diff.plus": "#2f6f1f",
+          "diff.minus": "#b0243f",
+          "function": "#1f5fae",
+          "constructor": "#1f5fae",
+          "attribute": "#1f5fae",
+          "link_uri": "#1f5fae",
+          "type": "#0b6a75",
+          "type.jsdoc": {
+            "font_style": "italic"
+          },
+          "namespace": "#0b6a75",
+          "enum": "#0b6a75",
+          "selector": "#0b6a75",
+          "number": "#b0245e",
+          "boolean": "#b0245e",
+          "constant": "#b0245e",
+          "constant.builtin": "#b0245e",
+          "variant": "#b0245e",
+          "variable": "#231d2e",
+          "property": "#3c4a9a",
+          "emphasis": {
+            "color": "#2c2438",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "#231d2e",
+            "font_weight": 700
+          },
+          "title": {
+            "color": "#2f6f1f",
+            "font_weight": 700
+          }
+        }
+      }
+    }
+  ]
+}
