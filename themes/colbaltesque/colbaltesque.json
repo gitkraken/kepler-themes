@@ -1,0 +1,85 @@
+{
+  "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
+  "schemaVersion": 2,
+  "name": "Colbaltesque",
+  "version": "1.5.4",
+  "author": "Wes Bos",
+  "description": "Cobalt2-inspired theme",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "colbaltesque-dark",
+      "name": "Colbaltesque Dark",
+      "extends": "dark",
+      "colors": {
+        "surface-sunken": "oklch(0.18 0.04 250)",
+        "surface-canvas": "oklch(0.22 0.05 250)",
+        "surface-raised": "oklch(0.25 0.05 250)",
+        "surface-overlay": "oklch(0.28 0.06 250)",
+        "field": "oklch(0.28 0.06 250)",
+        "ink": "oklch(0.995 0.01 95)",
+        "content-strong": "oklch(1 0.008 95)",
+        "content": "oklch(0.995 0.01 95)",
+        "content-muted": "oklch(0.97 0.015 95)",
+        "content-subtle": "oklch(0.94 0.02 95)",
+        "brand": "oklch(0.9 0.19 95)",
+        "brand-fill": "oklch(0.48 0.19 250)",
+        "brand-fill-hover": "oklch(0.55 0.21 250)",
+        "brand-fill-active": "oklch(0.42 0.19 250)",
+        "content-on-brand": "#ffffff",
+        "selected-bg": "oklch(0.32 0.12 250)",
+        "selected-border": "oklch(0.9 0.19 95)",
+        "selected-ink": "#ffffff",
+        "focus-ring": "oklch(0.9 0.19 95)",
+        "edge-subtle": "oklch(0.45 0.09 250)",
+        "edge": "oklch(0.53 0.1 250)",
+        "edge-strong": "oklch(0.63 0.11 250)",
+        "scrollbar-thumb": "oklch(0.63 0.11 250)",
+        "scrollbar-thumb-hover": "oklch(0.72 0.13 250)",
+        "scrollbar-track": 0.12
+      },
+      "terminal": {
+        "background": "oklch(0.22 0.05 250)",
+        "foreground": "oklch(0.995 0.01 95)",
+        "cursor": "oklch(0.9 0.19 95)",
+        "selection": "oklch(0.32 0.12 250)",
+        "ansi": [
+          "#000000",
+          "oklch(0.74 0.19 15)",
+          "oklch(0.8 0.24 145)",
+          "oklch(0.9 0.19 95)",
+          "oklch(0.7 0.17 250)",
+          "oklch(0.8 0.19 320)",
+          "oklch(0.84 0.13 195)",
+          "#ffffff",
+          "oklch(0.68 0.02 250)",
+          "oklch(0.74 0.19 15)",
+          "oklch(0.8 0.24 145)",
+          "oklch(0.9 0.19 95)",
+          "oklch(0.7 0.17 250)",
+          "oklch(0.8 0.19 320)",
+          "oklch(0.84 0.13 195)",
+          "#ffffff"
+        ]
+      },
+      "syntax": {
+        "tokens": {
+          "foreground": "oklch(0.995 0.01 95)",
+          "comment": {
+            "color": "oklch(0.7 0.17 250)",
+            "font_style": "italic"
+          },
+          "constant": "oklch(0.74 0.19 15)",
+          "keyword": "oklch(0.77 0.18 50)",
+          "string": "oklch(0.8 0.24 145)",
+          "number": "oklch(0.74 0.19 15)",
+          "function": "oklch(0.9 0.19 95)",
+          "type": "oklch(0.84 0.13 195)",
+          "variable": "oklch(0.995 0.01 95)",
+          "property": "oklch(0.87 0.12 200)",
+          "punctuation": "oklch(0.995 0.01 95)"
+        }
+      }
+    }
+  ]
+}
