@@ -5,9 +5,10 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { SCOPE_MIXED, SCOPE_WARNING, renderMarkdown, renderText, runChecks } from '../check.mjs';
+import { PALETTE_BUDGET, SCOPE_MIXED, SCOPE_WARNING, renderMarkdown, renderText, runChecks } from '../check.mjs';
 import { fixFormatting, formatJson, plain } from '../lib/gallery.mjs';
-import { globalProblemsOf, makeGallery, problemsOf, validFamily } from './helpers.mjs';
+import { COLOR_KEYS, SYNTAX_KEYS } from '../lib/landing-page.mjs';
+import { globalProblemsOf, makeGallery, previewOf, problemsOf, validFamily } from './helpers.mjs';
 
 const run = (root, options = {}) => runChecks({ root, ...options });
 
@@ -348,6 +349,35 @@ test('the markdown report puts untrusted strings in code spans', async () => {
   assert.ok(report.includes('**`ab`**'), report);
 });
 
+test('the markdown report lists each passing family the change leaves alone on one line', async () => {
+  const family = (slug, name = 'Example') =>
+    validFamily({ name, themes: [{ id: `${slug}-dark`, name: `${slug} dark`, extends: 'dark' }] });
+  const root = makeGallery({
+    changed: { family: family('changed') },
+    failing: { family: family('failing', 'Kepler Failing') },
+    quiet: { family: family('quiet') },
+  });
+  const sections = (markdown) => {
+    const parts = markdown.split(/^\*\*(.+)\*\*$/m);
+    const byHeading = {};
+    for (let i = 1; i < parts.length; i += 2) byHeading[parts[i]] = parts[i + 1].trim();
+    return byHeading;
+  };
+
+  const known = renderMarkdown(await run(root, { changedFiles: ['themes/changed/changed.json'] }));
+  const s = sections(known);
+  assert.deepEqual(Object.keys(s), ['`changed`', '`failing`', 'Other families', 'Gallery', 'Scope'], known);
+  assert.match(s['`changed`'], /^- Layout: pass$/m);
+  assert.match(s['`failing`'], /^- Names: \*\*fail\*\*/m);
+  assert.equal(s['Other families'], '- `quiet`: pass');
+
+  const unknown = renderMarkdown(await run(root));
+  const u = sections(unknown);
+  assert.deepEqual(Object.keys(u), ['`failing`', 'Other families', 'Gallery'], unknown);
+  assert.equal(u['Other families'], '- `changed`: pass\n- `quiet`: pass');
+  assert.equal(renderText(await run(root)).match(/pass {2}Layout/g).length, 3);
+});
+
 test('Kepler validation: a missing bundle only warns, except in CI', async () => {
   const root = makeGallery({ example: {} });
   const local = await run(root, { ci: false });
@@ -489,4 +519,138 @@ test('--author and the base listing drive the removal rule and the maintainer no
   assert.match(stranger.out, /NOTE {2}example: Maintainers on the base branch: ada\. The author mallory is not one of them/);
   assert.match(check('--author', 'ADA').out, /The author ADA is one of them\./);
   assert.ok(!check().out.includes('Review notes'), 'no --author, no maintainer section');
+});
+
+function previewVendor(previewFor) {
+  return {
+    checkThemeFamily: async (text) => ({
+      ok: true,
+      errors: [],
+      notices: [],
+      reservedIds: [],
+      themes: JSON.parse(text).themes.map((t) => ({ id: t.id, contrastFailures: [], preview: previewFor(t.id) })),
+    }),
+  };
+}
+
+function paletteOf(markdown) {
+  const at = markdown.indexOf('**Palette**');
+  return at < 0 ? null : markdown.slice(at);
+}
+
+/** Table rows as GitHub shows them: only `\|` escapes, and it shows as `|`, even inside a code span. */
+function tableRows(text) {
+  return text
+    .split('\n')
+    .filter((l) => l.startsWith('|'))
+    .map((l) => [...l.slice(1).matchAll(/((?:\\\||[^|])*)\|/g)].map((m) => m[1].trim().replaceAll('\\|', '|')));
+}
+
+test('the markdown report ends with a palette of each family the change touches', async () => {
+  const vendor = await import('../../vendor/kepler-theme-check.mjs');
+  const pair = validFamily({
+    themes: [
+      { id: 'example-dark', name: 'Example Dark', extends: 'dark' },
+      { id: 'example-light', name: 'Example Light', extends: 'light' },
+    ],
+  });
+  const other = validFamily({ themes: [{ id: 'other-dark', name: 'Other Dark', extends: 'dark' }] });
+  const root = makeGallery({ example: { family: pair }, other: { family: other } });
+  const markdown = renderMarkdown(await run(root, { vendor, changedFiles: ['themes/example/example.json'] }));
+
+  const palette = paletteOf(markdown);
+  assert.ok(palette, markdown);
+  assert.ok(markdown.indexOf('**Palette**') > markdown.indexOf('**Scope**'));
+  assert.ok(palette.includes('**`example`**') && !palette.includes('`other`'), palette);
+
+  const rows = tableRows(palette);
+  assert.deepEqual(rows[0].slice(1), ['`Example Dark`', '`Example Light`']);
+  const span = (c) => `\`${c}\``;
+  const expected = (p) => [
+    p.polarity,
+    ...COLOR_KEYS.map((k) => span(p.colors[k])),
+    ...SYNTAX_KEYS.map((k) => span(p.syntax[k])),
+    span(p.terminal.background),
+    span(p.terminal.foreground),
+    p.terminal.ansi.slice(0, 8).map(span).join(' '),
+    p.terminal.ansi.slice(8).map(span).join(' '),
+  ];
+  const { themes } = await vendor.checkThemeFamily(formatJson(pair));
+  for (const [column, theme] of themes.entries()) {
+    assert.deepEqual(rows.slice(2).map((r) => r[column + 1]), expected(theme.preview), theme.id);
+  }
+});
+
+test('no palette when the change touches no family or the changed files are unknown', async () => {
+  const root = makeGallery({ example: {} });
+  const vendor = previewVendor(() => previewOf());
+  assert.equal(paletteOf(renderMarkdown(await run(root, { vendor }))), null);
+  assert.equal(paletteOf(renderMarkdown(await run(root, { vendor, changedFiles: ['README.md'] }))), null);
+  assert.ok(paletteOf(renderMarkdown(await run(root, { vendor, changedFiles: ['themes/example/gallery.json'] }))));
+});
+
+test('the palette shows no colors for a bad preview and keeps every theme name in its cell', async () => {
+  const hostile = `a|b\\|c \`d\` @e [x](https://evil.example) ${'z'.repeat(200)}`;
+  const family = validFamily({
+    themes: [
+      { id: 'example-dark', name: 'Example Dark', extends: 'dark' },
+      { id: 'example-light', name: hostile, extends: 'light' },
+      { id: { toString: null }, extends: 'dark' },
+    ],
+  });
+  // First-party, so the name rule does not stop at the object id first.
+  const root = makeGallery({ example: { family }, broken: { family: '{"name": "Broken",}' } }, { firstParty: ['example'] });
+  const vendor = previewVendor((id) =>
+    id === 'example-dark' ? { ...previewOf(), colors: { ...previewOf().colors, canvas: 'red' } } : previewOf('light', '#abcdef'),
+  );
+  const palette = paletteOf(
+    renderMarkdown(await run(root, { vendor, changedFiles: ['themes/example/example.json', 'themes/broken/broken.json'] })),
+  );
+  assert.ok(!palette.includes('`broken`'), palette);
+  const rows = tableRows(palette);
+  assert.ok(rows.every((r) => r.length === 4), JSON.stringify(rows));
+  assert.equal(rows[0][3], '`(empty)`');
+  const header = rows[0][2];
+  assert.ok(header.startsWith('`a|b\\|c d @e [x](https://evil.example) z') && header.endsWith('…`'), header);
+  assert.ok(!header.slice(1, -1).includes('`') && [...header].length <= 64 + 3, header);
+  assert.equal(rows[2][1], 'No preview');
+  assert.ok(rows.slice(3).every((r) => r[1] === ''));
+  assert.equal(rows[2][2], 'light');
+  assert.equal(rows[3][2], '`#abcdef`');
+});
+
+test('the palette stops before the report outgrows the comment it is posted in', async () => {
+  const slugs = Array.from({ length: 60 }, (_, i) => `family-${String(i).padStart(2, '0')}`);
+  const families = slugs.map((slug) => [
+    slug,
+    { family: validFamily({ themes: [1, 2, 3, 4].map((n) => ({ id: `${slug}-${n}`, name: `${slug} ${n}`, extends: 'dark' })) }) },
+  ]);
+  // comment.yml lengthens every `@`, and the name rule quotes this unchanged family's name in full.
+  const mentions = ['mentions', { family: validFamily({ name: `Kepler ${'@'.repeat(8000)}` }) }];
+  const vendor = previewVendor(() => previewOf());
+  const changedFiles = slugs.map((s) => `themes/${s}/${s}.json`);
+  const posted = (text) => text.length + (text.match(/@/g)?.length ?? 0);
+  for (const gallery of [families, [...families, mentions]]) {
+    const report = await run(makeGallery(Object.fromEntries(gallery)), { vendor, changedFiles });
+    const markdown = renderMarkdown(report);
+    assert.ok(posted(markdown) <= PALETTE_BUDGET, String(posted(markdown)));
+    assert.ok(markdown.startsWith(renderMarkdown({ ...report, palettes: [] }).trimEnd()));
+    const shown = (paletteOf(markdown).match(/^\*\*`family-\d+`\*\*$/gm) ?? []).length;
+    const left = Number(/\n\n(\d+) families are not shown/.exec(markdown)?.[1]);
+    assert.ok(shown > 0 && left > 0, markdown.slice(-300));
+    assert.equal(shown + left, slugs.length);
+  }
+});
+
+test('the palette still says a family is not shown when no table fits', async () => {
+  const long = validFamily({
+    name: `Kepler ${'@'.repeat(25000)}`,
+    themes: [{ id: 'long-dark', name: 'Long Dark', extends: 'dark' }],
+  });
+  const root = makeGallery({ example: {}, long: { family: long } });
+  const vendor = previewVendor(() => previewOf());
+  const palette = paletteOf(renderMarkdown(await run(root, { vendor, changedFiles: ['themes/example/example.json'] })));
+  assert.ok(palette, 'no palette section');
+  assert.match(palette, /^1 family is not shown/m);
+  assert.ok(!palette.includes('|'), palette);
 });

@@ -2,6 +2,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { formatJson, plain } from '../lib/gallery.mjs';
+import { COLOR_KEYS, SYNTAX_KEYS } from '../lib/landing-page.mjs';
 
 export function validFamily(overrides = {}) {
   return {
@@ -42,4 +43,13 @@ export function problemsOf(report, slug, name) {
 
 export function globalProblemsOf(report, name) {
   return report.global.find((c) => c.name === name)?.problems.map(plain);
+}
+
+export function previewOf(polarity = 'dark', color = '#336699') {
+  return {
+    polarity,
+    colors: Object.fromEntries(COLOR_KEYS.map((k) => [k, color])),
+    syntax: Object.fromEntries(SYNTAX_KEYS.map((k) => [k, color])),
+    terminal: { background: color, foreground: color, ansi: Array(16).fill(color) },
+  };
 }

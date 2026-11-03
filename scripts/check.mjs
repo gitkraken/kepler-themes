@@ -22,6 +22,7 @@ import {
   markdown,
   plain,
 } from './lib/gallery.mjs';
+import { validPreview } from './lib/landing-page.mjs';
 import { comparePrecedence, isSemver } from './lib/semver.mjs';
 
 const LOGIN = /^[a-z0-9]+(-[a-z0-9]+)*$/i;
@@ -187,13 +188,16 @@ function versionProblems(f, baseText) {
   return [];
 }
 
-async function keplerProblems(vendor, f) {
-  if (f.family.text === undefined) return [];
+async function keplerCheck(vendor, f) {
+  if (f.family.text === undefined) return { problems: [], previews: new Map() };
   let result;
   try {
     result = await vendor.checkThemeFamily(f.family.text);
   } catch (err) {
-    return [`Kepler's validator failed to run: ${mark(err instanceof Error ? err.message : String(err))}`];
+    return {
+      problems: [`Kepler's validator failed to run: ${mark(err instanceof Error ? err.message : String(err))}`],
+      previews: new Map(),
+    };
   }
   const problems = [];
   for (const e of result.errors ?? []) problems.push(`Error: ${mark(e.message)}`);
@@ -210,13 +214,23 @@ async function keplerProblems(vendor, f) {
     }
   }
   if (result.ok === false && problems.length === 0) problems.push("Kepler's validator rejected the file.");
-  return problems;
+  const previews = new Map(
+    (result.themes ?? []).filter((t) => typeof t?.id === 'string').map((t) => [t.id, validPreview(t.preview)]),
+  );
+  return { problems, previews };
 }
 
 export const SCOPE_WARNING =
   "Changes the gallery's tooling or settings: review it as code. The gate above ran the tooling on main, not this pull request's.";
 export const SCOPE_MIXED =
   'Changes files outside its own folder under themes/ together with a theme: split the theme into its own pull request so each can be reviewed on its own.';
+
+function changedSlugsOf(changedFiles) {
+  if (changedFiles === null) return null;
+  return new Set(
+    changedFiles.filter((p) => p.startsWith('themes/') && p.split('/').length >= 3).map((p) => p.split('/')[1]),
+  );
+}
 
 /** Informational only: the gate never fails on scope; the reviewer decides. */
 function scopeOf(changedFiles) {
@@ -292,10 +306,7 @@ function reviewNotes({ families, baseSlugs, readBase, author, changedFiles, firs
   }
 
   if (author !== null && changedFiles !== null) {
-    const changed = new Set(
-      changedFiles.filter((p) => p.startsWith('themes/') && p.split('/').length >= 3).map((p) => p.split('/')[1]),
-    );
-    for (const slug of [...changed].filter((s) => onBase.has(s))) {
+    for (const slug of [...changedSlugsOf(changedFiles)].filter((s) => onBase.has(s))) {
       const gallery = parseBaseJson(readBase(`themes/${slug}/gallery.json`));
       const maintainers =
         isRecord(gallery) && Array.isArray(gallery.maintainers)
@@ -350,7 +361,9 @@ function treeLimitProblems(families) {
  * `baseSlugs` lists the family folders the base has (null when unknown).
  * `changedFiles` lists the repo-relative paths the change touches (null when unknown), and
  * `author` is the login of whoever opened the change (null skips the maintainer note).
- * Returns { families: [{ slug, checks: [{ name, problems }] }], global, review, scope, notes, failed }.
+ * Returns { families: [{ slug, changed, checks: [{ name, problems }] }], global, review, scope, palettes, notes, failed },
+ * where `changed` is false when the changed files are unknown, and `palettes` holds
+ * [{ slug, themes: [{ name, preview }] }] for each changed family that has themes.
  */
 export async function runChecks({
   root,
@@ -377,7 +390,9 @@ export async function runChecks({
     }
   }
 
+  const changedSlugs = changedSlugsOf(changedFiles);
   const familyReports = [];
+  const palettes = [];
   for (const f of families) {
     const checks = [
       { name: 'Layout', problems: layoutProblems(f) },
@@ -392,8 +407,17 @@ export async function runChecks({
       { name: 'Ids', problems: idProblems(f, idOwners, lists.withdrawn) },
       { name: 'Gallery data', problems: galleryDataProblems(f, lists.tags) },
     ];
-    if (vendor) checks.push({ name: 'Kepler validation', problems: await keplerProblems(vendor, f) });
-    familyReports.push({ slug: f.slug, checks });
+    const changed = changedSlugs?.has(f.slug) ?? false;
+    if (vendor) {
+      const { problems, previews } = await keplerCheck(vendor, f);
+      checks.push({ name: 'Kepler validation', problems });
+      const themes = themesOf(f).map((t) => ({
+        name: typeof t.name === 'string' ? t.name : typeof t.id === 'string' ? t.id : '',
+        preview: previews.get(t.id) ?? null,
+      }));
+      if (changed && themes.length > 0) palettes.push({ slug: f.slug, themes });
+    }
+    familyReports.push({ slug: f.slug, changed, checks });
   }
 
   const global = [];
@@ -428,7 +452,7 @@ export async function runChecks({
   const failed =
     familyReports.some((r) => r.checks.some((c) => c.problems.length > 0)) ||
     global.some((c) => c.problems.length > 0);
-  return { families: familyReports, global, review, scope, notes, failed };
+  return { families: familyReports, global, review, scope, palettes, notes, failed };
 }
 
 function scopeText(scope) {
@@ -453,6 +477,94 @@ function scopeMarkdown(scope) {
   }
   if (scope.mixed) lines.push(`- **Note:** ${markdown(SCOPE_MIXED)}`);
   return lines;
+}
+
+// comment.yml cuts the report at 60,000 characters. Palette tables end within this budget, counted as
+// posted, so a cut never leaves a theme name's code span open.
+export const PALETTE_BUDGET = 50_000;
+const PALETTE_NAME_LENGTH = 64;
+const code = (color) => `\`${color}\``;
+const PALETTE_ROWS = [
+  ['Base', (p) => p.polarity],
+  ...[
+    ['Canvas', 'canvas'],
+    ['Sunken', 'sunken'],
+    ['Raised', 'raised'],
+    ['Ink', 'ink'],
+    ['Text', 'text'],
+    ['Muted', 'muted'],
+    ['Edge', 'edge'],
+    ['Selected', 'selected'],
+    ['Selected text', 'selectedInk'],
+    ['Brand', 'brand'],
+    ['Fill', 'fill'],
+    ['On fill', 'onFill'],
+  ].map(([label, key]) => [label, (p) => code(p.colors[key])]),
+  ...[
+    ['Code text', 'text'],
+    ['Keyword', 'keyword'],
+    ['Control keyword', 'control'],
+    ['Function', 'function'],
+    ['Type', 'type'],
+    ['String', 'string'],
+    ['Number', 'number'],
+    ['Variable', 'variable'],
+    ['Comment', 'comment'],
+  ].map(([label, key]) => [label, (p) => code(p.syntax[key])]),
+  ['Terminal background', (p) => code(p.terminal.background)],
+  ['Terminal text', (p) => code(p.terminal.foreground)],
+  ['ANSI 0 to 7', (p) => p.terminal.ansi.slice(0, 8).map(code).join(' ')],
+  ['ANSI 8 to 15', (p) => p.terminal.ansi.slice(8).map(code).join(' ')],
+];
+
+/** A theme name as a table cell, shortened and unable to split the row. */
+function nameCell(name) {
+  const chars = [...name];
+  const short = chars.length > PALETTE_NAME_LENGTH ? `${chars.slice(0, PALETTE_NAME_LENGTH).join('')}…` : name;
+  return markdown(mark(short)).replaceAll('|', '\\|');
+}
+
+function paletteTable({ slug, themes }) {
+  const row = (cells) => `| ${cells.join(' | ')} |`;
+  return [
+    '',
+    `**${markdown(mark(slug))}**`,
+    '',
+    row(['', ...themes.map((t) => nameCell(t.name))]),
+    row(['---', ...themes.map(() => '---')]),
+    ...PALETTE_ROWS.map(([label, value], i) =>
+      row([label, ...themes.map((t) => (t.preview ? value(t.preview) : i === 0 ? 'No preview' : ''))]),
+    ),
+  ].join('\n');
+}
+
+/** The length comment.yml posts: it adds a zero-width space after every `@`. */
+function postedLength(text) {
+  return text.length + (text.match(/@/g)?.length ?? 0);
+}
+
+/** The palette lines to append to `report`, as many tables as fit PALETTE_BUDGET. */
+function paletteMarkdown(palettes, report) {
+  if (palettes.length === 0) return [];
+  const head = [
+    '',
+    '**Palette**',
+    '',
+    "The colors Kepler's validator resolves for each theme's preview. A family can set more colors than these.",
+  ];
+  const section = (tables) => {
+    const left = palettes.length - tables.length;
+    const note = `${left} ${left === 1 ? 'family is' : 'families are'} not shown, to keep this comment under GitHub's size limit.`;
+    return [...head, ...tables, ...(left > 0 ? ['', note] : [])];
+  };
+  const fits = (lines) => postedLength(`${report}\n${lines.join('\n')}\n`) <= PALETTE_BUDGET;
+  const tables = [];
+  for (const palette of palettes) {
+    const table = paletteTable(palette);
+    if (!fits(section([...tables, table]))) break;
+    tables.push(table);
+  }
+  return section(tables);
 }
 
 export function renderText(report) {
@@ -486,9 +598,18 @@ export function renderMarkdown(report) {
       : c.problems.map((p) => `- ${c.name}: **fail**, ${markdown(p)}`).join('\n');
   const lines = [report.failed ? '### Theme checks: failed' : '### Theme checks: passed', ''];
   for (const note of report.notes) lines.push(`> ${markdown(note)}`, '');
-  for (const r of report.families) {
+  // One block per family would outgrow the posted comment as the gallery grows, so unchanged
+  // passing families get one line each.
+  const expanded = (r) => r.changed || r.checks.some((c) => c.problems.length > 0);
+  for (const r of report.families.filter(expanded)) {
     lines.push(`**${markdown(mark(r.slug))}**`, '');
     for (const c of r.checks) lines.push(line(c));
+    lines.push('');
+  }
+  const others = report.families.filter((r) => !expanded(r));
+  if (others.length > 0) {
+    lines.push('**Other families**', '');
+    for (const r of others) lines.push(`- ${markdown(mark(r.slug))}: pass`);
     lines.push('');
   }
   lines.push('**Gallery**', '');
@@ -500,6 +621,7 @@ export function renderMarkdown(report) {
     }
   }
   lines.push(...scopeMarkdown(report.scope));
+  lines.push(...paletteMarkdown(report.palettes, lines.join('\n')));
   return `${lines.join('\n')}\n`;
 }
 

@@ -6,24 +6,11 @@ import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildIndex, buildSite } from '../build-index.mjs';
 import { DOWNLOAD_URL, SITE_URL, renderLandingPage, validExtras } from '../lib/landing-page.mjs';
-import { makeGallery, validFamily } from './helpers.mjs';
+import { makeGallery, previewOf, validFamily } from './helpers.mjs';
 
 const NOW = new Date('2026-11-01T12:00:00Z');
 const SITE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', 'site');
 const HOSTILE = '</script><script>alert(1)</script>';
-
-function preview(polarity = 'dark', color = '#336699') {
-  return {
-    polarity,
-    colors: Object.fromEntries(
-      ['canvas', 'sunken', 'raised', 'ink', 'text', 'muted', 'edge', 'selected', 'selectedInk', 'brand', 'fill', 'onFill'].map((k) => [k, color]),
-    ),
-    terminal: { background: color, foreground: color, ansi: Array.from({ length: 16 }, () => color) },
-    syntax: Object.fromEntries(
-      ['text', 'keyword', 'control', 'function', 'type', 'string', 'number', 'variable', 'comment'].map((k) => [k, color]),
-    ),
-  };
-}
 
 /** Gives the gallery a stand-in for Kepler's validator that reports the given previews by theme id. */
 function withVendor(root, previews) {
@@ -79,7 +66,7 @@ test('hostile family text is escaped in the page and cannot close the data block
     ],
   });
   const root = makeGallery({ hostile: { family, gallery: { maintainers: ['ada'], tags: ['blue'] } } });
-  withVendor(root, { 'hostile-dark': preview('dark') });
+  withVendor(root, { 'hostile-dark': previewOf('dark') });
   const { html } = await build(root);
 
   assert.ok(!html.includes('<script>alert'), 'no injected script element');
@@ -96,13 +83,13 @@ test('hostile family text is escaped in the page and cannot close the data block
 });
 
 test('a preview with a value that is not a hex color is dropped and the family renders without a frame', async () => {
-  const bad = preview('dark');
+  const bad = previewOf('dark');
   bad.syntax.keyword = 'red;background:url(//evil.example/x)';
   const root = makeGallery({
     bad: { family: validFamily({ name: 'Bad', themes: [{ id: 'bad-dark', name: 'Bad Dark', extends: 'dark' }] }) },
     good: { family: validFamily({ name: 'Good', themes: [{ id: 'good-dark', name: 'Good Dark', extends: 'dark' }] }) },
   });
-  withVendor(root, { 'bad-dark': bad, 'good-dark': preview('dark') });
+  withVendor(root, { 'bad-dark': bad, 'good-dark': previewOf('dark') });
   const { html } = await build(root);
 
   assert.ok(!html.includes('evil.example'));
@@ -119,11 +106,11 @@ test('a preview with a value that is not a hex color is dropped and the family r
 });
 
 test('a short or malformed color list is also dropped', () => {
-  const short = preview('dark');
+  const short = previewOf('dark');
   short.terminal.ansi.pop();
-  const shaped = preview('dark');
+  const shaped = previewOf('dark');
   shaped.polarity = 'sepia';
-  const missing = preview('dark');
+  const missing = previewOf('dark');
   delete missing.colors.brand;
   const page = renderLandingPage(index([entry('a', '2026-01-01')]), { a: { 'a-dark': short } });
   assert.ok(!page.includes('class="sweep"'));
@@ -166,7 +153,7 @@ test('a family with no previews, as with an older validator, still renders', asy
 
 test('previews stay out of the index the Kepler app reads', async () => {
   const root = makeGallery({ example: { family: validFamily({ themes: [{ id: 'example-dark', name: 'Example Dark', extends: 'dark' }] }) } });
-  withVendor(root, { 'example-dark': preview('dark') });
+  withVendor(root, { 'example-dark': previewOf('dark') });
   const { outDir } = await build(root);
   const written = readFileSync(join(outDir, 'v1', 'index.json'), 'utf8');
   assert.equal(JSON.stringify(JSON.parse(written)), JSON.stringify(await buildIndex({ root, now: NOW })));
@@ -191,11 +178,11 @@ test('a family with a painted dark and light theme sweeps; one with a single pol
   });
   const root = makeGallery({ pair: { family: pair }, trio: { family: trio }, solo: {} });
   withVendor(root, {
-    'pair-dark': preview('dark', '#111111'),
-    'pair-light': preview('light', '#eeeeee'),
-    'trio-a': preview('dark'),
-    'trio-b': preview('dark'),
-    'example-dark': preview('dark'),
+    'pair-dark': previewOf('dark', '#111111'),
+    'pair-light': previewOf('light', '#eeeeee'),
+    'trio-a': previewOf('dark'),
+    'trio-b': previewOf('dark'),
+    'example-dark': previewOf('dark'),
   });
   const { html } = await build(root);
   const card = (slug) => {
@@ -244,7 +231,7 @@ test('family color extras are kept only as a hex or plain oklch() color', () => 
 
   const family = entry('a', '2026-01-01');
   family.family.themes[0].colors = { ...hostile, ai: '#0dcfb2', 'diff-added': 'oklch(0.48 0.155 142 / 0.5)' };
-  const html = renderLandingPage(index([family]), { a: { 'a-dark': preview('dark') } });
+  const html = renderLandingPage(index([family]), { a: { 'a-dark': previewOf('dark') } });
   assert.ok(!html.includes('url(') && !html.includes('evil.example') && !html.includes('var(--x)') && !html.includes('2 3) x'));
   assert.deepEqual(JSON.parse(dataBlock(html)).families[0].themes[0].extras, { ai: '#0dcfb2', 'diff-added': 'oklch(0.48 0.155 142 / 0.5)' });
 });
@@ -262,7 +249,7 @@ test('the hero shows at most six painted themes, featured families first', () =>
       }),
     }),
   );
-  const previews = Object.fromEntries(families.map((f) => [f.slug, { [`${f.slug}-dark`]: preview('dark'), [`${f.slug}-light`]: preview('light') }]));
+  const previews = Object.fromEntries(families.map((f) => [f.slug, { [`${f.slug}-dark`]: previewOf('dark'), [`${f.slug}-light`]: previewOf('light') }]));
   const data = JSON.parse(dataBlock(renderLandingPage(index(families), previews)));
   assert.equal(data.hero.length, 6);
   assert.deepEqual(data.hero.slice(0, 2), [{ slug: 'd', id: 'd-dark' }, { slug: 'd', id: 'd-light' }]);
@@ -306,7 +293,7 @@ test('a visitor without Kepler is told what it is and where to download it', () 
 test('the data block carries what the catalog search and the cards need', () => {
   const families = [entry('a', '2026-01-01', { name: 'Aurora', tags: ['green', 'cool'] })];
   families[0].family.themes.push({ id: 'a-light', name: 'a Light', extends: 'light' });
-  const html = renderLandingPage(index(families), { a: { 'a-dark': preview('dark') } });
+  const html = renderLandingPage(index(families), { a: { 'a-dark': previewOf('dark') } });
   const [family] = JSON.parse(dataBlock(html)).families;
   assert.equal(family.name, 'Aurora');
   assert.deepEqual(family.tags, ['green', 'cool']);

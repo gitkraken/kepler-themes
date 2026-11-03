@@ -9,8 +9,8 @@ const EXTRA_KEYS = ['ai', 'diff-added', 'diff-removed', 'scrollbar-thumb', 'edge
 const EXTRA_HEX = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i;
 const NUM = String.raw`(?:\d+(?:\.\d+)?|\.\d+)`;
 const EXTRA_OKLCH = new RegExp(String.raw`^oklch\(\s*${NUM}\s+${NUM}\s+${NUM}\s*(?:\/\s*${NUM}\s*)?\)$`, 'i');
-const COLOR_KEYS = ['canvas', 'sunken', 'raised', 'ink', 'text', 'muted', 'edge', 'selected', 'selectedInk', 'brand', 'fill', 'onFill'];
-const SYNTAX_KEYS = ['text', 'keyword', 'control', 'function', 'type', 'string', 'number', 'variable', 'comment'];
+export const COLOR_KEYS = ['canvas', 'sunken', 'raised', 'ink', 'text', 'muted', 'edge', 'selected', 'selectedInk', 'brand', 'fill', 'onFill'];
+export const SYNTAX_KEYS = ['text', 'keyword', 'control', 'function', 'type', 'string', 'number', 'variable', 'comment'];
 
 // Family names, authors and descriptions come from contributors' files, so every value is
 // escaped before it reaches the page.
