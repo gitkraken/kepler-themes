@@ -5,7 +5,7 @@
   "version": "1.5.4",
   "author": "Jon Humphrey",
   "description": "A port of Wes Bos' Cobalt2 theme",
-  "homepage": "https://github.com/wesbos/cobalt2-vscode"
+  "homepage": "https://github.com/wesbos/cobalt2-vscode",
   "license": "MIT",
   "themes": [
     {
