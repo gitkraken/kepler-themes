@@ -3,8 +3,9 @@
   "schemaVersion": 2,
   "name": "Colbaltesque",
   "version": "1.5.4",
-  "author": "Wes Bos",
-  "description": "Cobalt2-inspired theme",
+  "author": "Jon Humphrey",
+  "description": "A port of Wes Bos' Cobalt2 theme",
+  "homepage": "https://github.com/wesbos/vscode-theme-cobalt2"
   "license": "MIT",
   "themes": [
     {
