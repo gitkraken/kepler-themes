@@ -12,6 +12,7 @@
     "check": "node scripts/check.mjs",
     "fix": "node scripts/check.mjs --fix",
     "build": "node scripts/build-index.mjs",
+    "preview": "node scripts/preview.mjs",
     "test": "node --test \"scripts/__tests__/*.test.mjs\""
   }
 }

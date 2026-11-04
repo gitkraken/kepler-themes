@@ -3,14 +3,17 @@ name: comment
 # This workflow runs from the default branch with a token that can write to
 # pull requests, so it must never check out or run code from a pull request:
 # a fork's PR could otherwise use that token. It only reads the artifact the
-# check workflow produced and posts its text.
+# check workflow produced and posts its text and screenshots.
 on:
   workflow_run:
     workflows: [check]
     types: [completed]
 
+# `contents: write` is only for writing preview images to `refs/previews/pr-<number>`. It is the
+# reason this workflow must never check out or run anything from a pull request.
 permissions:
   actions: read
+  contents: write
   pull-requests: write
 
 jobs:
@@ -35,6 +38,7 @@ jobs:
             // The number comes from the PR's own run, which the PR can edit, so it is
             // only trusted when that pull request is the one the run checked.
             const run = context.payload.workflow_run;
+            const { owner, repo } = context.repo;
             const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: number });
             if (
               pr.head.sha !== run.head_sha ||
@@ -49,17 +53,155 @@ jobs:
               ...context.repo, pull_number: number, per_page: 100,
             });
             const paths = files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean));
+            const touchesWorkflows = paths.some((p) => p.startsWith('.github/'));
             let banner = '';
-            if (paths.some((p) => p.startsWith('.github/'))) {
+            if (touchesWorkflows) {
               banner = "> **This pull request changes the gallery's workflows, so its check ran code it supplies. Neither its status nor the report below can be trusted: review it as code.**\n\n";
             } else if (paths.some((p) => !p.startsWith('themes/'))) {
               banner = "> **This pull request changes files outside `themes/`. The check ran `main`'s tooling, not this pull request's; the tooling tests job shows its effect.**\n\n";
             }
-            // The report is data from an untrusted run: post it as text, capped well under GitHub's
-            // limit, with mentions defused so a theme name cannot ping anyone.
-            const report = fs.readFileSync('report/check-report.md', 'utf8').slice(0, 60000).replaceAll('@', '@​');
-            const body = `${marker}\n${banner}${report}`;
-            const { owner, repo } = context.repo;
+            // The report is data from an untrusted run: post it as text, with mentions defused so a theme
+            // name cannot ping anyone. It is capped below, once the preview section's length is known.
+            const report = fs.readFileSync('report/check-report.md', 'utf8').replaceAll('@', '@​');
+            // Screenshots of the changed themes, from the check run's artifact. That run is the PR's own,
+            // so the manifest and the PNG bytes are untrusted: nothing from them is used except bytes that
+            // pass the checks below, and text that is escaped before it goes into the comment. They are only
+            // published when the PR does not touch .github/, because then the run is main's tooling.
+            const MAX_PREVIEWS = 24;
+            const MAX_PNG_BYTES = 3 * 1024 * 1024;
+            const MAX_TOTAL_BYTES = 30 * 1024 * 1024;
+            const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+            const isRecord = (v) => typeof v === 'object' && v !== null && !Array.isArray(v);
+            // Cuts by code point, so an emoji at the cut is never split into half a pair.
+            const cut = (text, length) => Array.from(text).slice(0, length).join('');
+            // Names are contributor text. Turn markup and markdown characters into entities (GitHub shows
+            // them as plain characters), drop line breaks, cap the length, and defuse mentions like the report.
+            const safeText = (value) =>
+              cut(String(value ?? '').replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, ' ').trim(), 80)
+                .replace(/[&<>"'*_`~|#!\[\]()\\]/g, (c) => `&#${c.charCodeAt(0)};`)
+                .replaceAll('@', '@​');
+
+            // The manifest's file names are only used to find a file, and only when they are a plain number.
+            // Its slugs only group the images by family (two families can share a name); they never reach the comment.
+            // Its polarity only places an image in the dark or the light column, and only when it is exactly one of the two.
+            function readPreviews() {
+              const none = { images: [], truncated: false };
+              const dir = 'report/previews';
+              if (!fs.existsSync(`${dir}/manifest.json`)) return none;
+              let manifest;
+              try {
+                manifest = JSON.parse(fs.readFileSync(`${dir}/manifest.json`, 'utf8'));
+              } catch {
+                return none;
+              }
+              if (!isRecord(manifest) || !Array.isArray(manifest.previews)) return none;
+              const images = [];
+              let total = 0;
+              for (const entry of manifest.previews.slice(0, MAX_PREVIEWS)) {
+                if (!isRecord(entry) || typeof entry.file !== 'string' || !/^[0-9]{1,2}\.png$/.test(entry.file)) continue;
+                const stat = fs.lstatSync(`${dir}/${entry.file}`, { throwIfNoEntry: false });
+                if (!stat?.isFile() || stat.size > MAX_PNG_BYTES || total + stat.size > MAX_TOTAL_BYTES) continue;
+                const bytes = fs.readFileSync(`${dir}/${entry.file}`);
+                if (bytes.length < PNG_SIGNATURE.length || !bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) continue;
+                total += bytes.length;
+                const family = safeText(entry.family);
+                const polarity = entry.polarity === 'dark' || entry.polarity === 'light' ? entry.polarity : null;
+                images.push({ bytes, group: typeof entry.slug === 'string' ? entry.slug : family, family, theme: safeText(entry.theme), polarity });
+              }
+              return { images, truncated: manifest.truncated === true || manifest.previews.length > MAX_PREVIEWS };
+            }
+
+            // Each pull request's images live in one parentless commit at `refs/previews/pr-<number>`,
+            // written with the Git Data API so nothing is checked out. That ref is outside refs/heads
+            // and refs/tags, so neither `git clone` nor actions/checkout downloads it, and a new push
+            // replaces the commit instead of adding history, so old images become unreferenced and
+            // GitHub drops them. Only this pull request's runs write its ref, and the identity check
+            // above stops a run for an older head, but two runs of the same head (a re-run) can both get
+            // here, so creating the ref falls back to moving it. The URLs name the commit, so GitHub's
+            // image proxy never serves a stale picture after a new push.
+            async function pushImages(images) {
+              const ref = `previews/pr-${number}`;
+              const tree = [];
+              for (const image of images) {
+                const { data: blob } = await github.rest.git.createBlob({
+                  owner, repo, content: image.bytes.toString('base64'), encoding: 'base64',
+                });
+                tree.push({ path: image.path, mode: '100644', type: 'blob', sha: blob.sha });
+              }
+              const { data: newTree } = await github.rest.git.createTree({ owner, repo, tree });
+              const { data: commit } = await github.rest.git.createCommit({
+                owner, repo,
+                message: `Previews for #${number} at ${pr.head.sha.slice(0, 7)}`,
+                tree: newTree.sha,
+                parents: [],
+              });
+              try {
+                await github.rest.git.createRef({ owner, repo, ref: `refs/${ref}`, sha: commit.sha });
+              } catch (err) {
+                // 422: the ref already exists, from an earlier push or a run that got here first.
+                if (err.status !== 422) throw err;
+                await github.rest.git.updateRef({ owner, repo, ref, sha: commit.sha, force: true });
+              }
+              return commit.sha;
+            }
+
+            // Closing a pull request runs nothing, so each run also deletes the preview refs of pull
+            // requests that are no longer open. Their comments then lose their images.
+            async function pruneClosed() {
+              try {
+                const refs = await github.paginate(github.rest.git.listMatchingRefs, {
+                  owner, repo, ref: 'previews/pr-', per_page: 100,
+                });
+                if (refs.length === 0) return;
+                const open = new Set(
+                  (await github.paginate(github.rest.pulls.list, { owner, repo, state: 'open', per_page: 100 })).map((p) => p.number),
+                );
+                for (const { ref } of refs) {
+                  const match = /^refs\/previews\/pr-([0-9]+)$/.exec(ref);
+                  if (!match || open.has(Number(match[1]))) continue;
+                  await github.rest.git.deleteRef({ owner, repo, ref: ref.slice('refs/'.length) });
+                }
+              } catch (err) {
+                core.warning(`Could not prune old previews: ${err instanceof Error ? err.message : String(err)}`);
+              }
+            }
+
+            async function previewSection() {
+              if (touchesWorkflows) {
+                return "\n\n### Preview\n\nPreviews were skipped because this pull request changes the gallery's workflows, so its screenshots would come from a run it controls.";
+              }
+              try {
+                const read = readPreviews();
+                const images = read.images.map((image, i) => ({ ...image, path: `${i + 1}.png` }));
+                if (images.length === 0) return '';
+                const sha = await pushImages(images);
+                // Each family is a table: a row per dark and light pair, dark on the left, and an image
+                // with no usable polarity on a row of its own.
+                const families = new Map();
+                for (const image of images) {
+                  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${sha}/${image.path}`;
+                  const alt = [image.family, image.theme].filter(Boolean).join(', ');
+                  if (!families.has(image.group)) families.set(image.group, { name: image.family, dark: [], light: [], other: [] });
+                  families.get(image.group)[image.polarity ?? 'other'].push(`<img src="${url}" width="400" alt="${alt}"><br>${image.theme}`);
+                }
+                const cell = (html) => `<td>${html ?? ''}</td>`;
+                const cards = [...families.values()].map(({ name, dark, light, other }) => {
+                  const rows = [];
+                  for (let i = 0; i < Math.max(dark.length, light.length); i++) rows.push(`<tr>${cell(dark[i])}${cell(light[i])}</tr>`);
+                  for (const html of other) rows.push(`<tr>${cell(html)}${cell()}</tr>`);
+                  return `**${name || 'Theme'}**\n\n<table>\n${rows.join('\n')}\n</table>`;
+                }).join('\n\n');
+                const more = read.truncated ? `\n\nOnly the first ${MAX_PREVIEWS} variants are shown.` : '';
+                return `\n\n### Preview\n\n${cards}${more}`;
+              } catch (err) {
+                core.warning(`Could not publish the previews: ${err instanceof Error ? err.message : String(err)}`);
+                return '\n\n### Preview\n\nThe preview could not be published.';
+              }
+            }
+            // GitHub refuses a comment over 65536 characters, so the report gets the room the rest leaves.
+            const preview = await previewSection();
+            const room = Math.max(0, Math.min(60000, 65000 - marker.length - banner.length - preview.length));
+            const body = `${marker}\n${banner}${cut(report, room)}${preview}`;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: number, per_page: 100,
             });
@@ -69,3 +211,4 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner, repo, issue_number: number, body });
             }
+            await pruneClosed();

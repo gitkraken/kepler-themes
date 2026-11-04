@@ -92,4 +92,6 @@ Layout, formatting, size, the required fields and the license list, the version 
 
 The report also has a Review notes section for the maintainer, theme id and first-party points above, and a Scope section. Neither fails the check. Scope flags a change to files outside `themes/`, which the gallery team reviews as code because CI runs the tooling from `main`, not from your pull request.
 
-Later phases will add a preview image on each pull request and a nightly re-check against Kepler's next palettes.
+The bot's comment on your pull request also shows a screenshot of each changed theme's window from the gallery page, one per variant with dark beside light, so reviewers can judge the look without checking anything out. Pull requests that change `.github/` get no screenshots. You can make the same images yourself with `npm run preview` (it needs Chrome, or set `CHROME_PATH`). They are written to `preview/`, and `--base <ref>` picks what to compare with (default `origin/main`).
+
+A later phase will add a nightly re-check against Kepler's next palettes.

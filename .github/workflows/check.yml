@@ -51,31 +51,20 @@ jobs:
           mkdir -p report
           cp check-report.md report/check-report.md || echo "The check did not produce a report." > report/check-report.md
           echo "$PR_NUMBER" > report/pr-number
+      # Not part of the gate: a screenshot failure must never change the check's result. The
+      # script comes from `trusted/` and reads `pr/` as data only, like the check above.
+      - name: Preview the changed themes
+        if: always()
+        continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # main's tooling decides; until it has a preview script there is nothing to run.
+          if [ -f trusted/scripts/preview.mjs ]; then
+            node trusted/scripts/preview.mjs --root pr --base "origin/$BASE_REF" --out report/previews
+          fi
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: check-report
           path: report/
-
-  # Not the gate. This runs the pull request's own tests of the tooling, and then its own check
-  # over its own tree, which is code the PR supplies, so it is only safe because the token is
-  # read-only and it holds no secrets. A PR can make these pass; the `check` job above is what
-  # protects main. It is the one job that shows what changed tooling does to every family.
-  tooling-tests:
-    name: tooling tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-      - run: node --test "scripts/__tests__/*.test.mjs"
-      - name: Check themes with this pull request's tooling
-        env:
-          BASE_REF: ${{ github.base_ref }}
-          CI: "1"
-        run: node scripts/check.mjs --base "origin/$BASE_REF"

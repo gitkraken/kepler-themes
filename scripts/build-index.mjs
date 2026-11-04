@@ -147,6 +147,13 @@ export async function buildIndex({ root, now = new Date() }) {
 // What the page links to or loads from `site/`; nothing else is requested from any other host.
 const SITE_FILES = ['site.css', 'site.js'];
 
+/** Copies the static files the landing page uses from `siteDir` into `outDir`. */
+export function copySiteFiles(siteDir, outDir) {
+  for (const name of SITE_FILES) cpSync(join(siteDir, name), join(outDir, name));
+  cpSync(join(siteDir, 'fonts'), join(outDir, 'fonts'), { recursive: true });
+  cpSync(join(siteDir, 'brand'), join(outDir, 'brand'), { recursive: true });
+}
+
 /**
  * Each theme's preview colors from Kepler's validator, by family slug and theme id. The index the
  * Kepler app reads never carries them, and an older validator that reports none yields none; the
@@ -184,9 +191,7 @@ export async function buildSite({ root, outDir = join(root, 'dist'), siteDir = j
   mkdirSync(dirname(indexPath), { recursive: true });
   writeFileSync(indexPath, text);
   writeFileSync(join(outDir, 'index.html'), renderLandingPage(index, previews));
-  for (const name of SITE_FILES) cpSync(join(siteDir, name), join(outDir, name));
-  cpSync(join(siteDir, 'fonts'), join(outDir, 'fonts'), { recursive: true });
-  cpSync(join(siteDir, 'brand'), join(outDir, 'brand'), { recursive: true });
+  copySiteFiles(siteDir, outDir);
   return { index, indexPath };
 }
 

@@ -1,3 +1,5 @@
 dist/
 check-report.md
+preview/
+preview-smoke/
 node_modules/
