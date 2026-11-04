@@ -14,6 +14,7 @@ import {
   fixFormatting,
   formatProblems,
   indexLimitProblems,
+  isRecord,
   layoutProblems,
   loadGallery,
   loadLists,
@@ -27,10 +28,6 @@ import { comparePrecedence, isSemver } from './lib/semver.mjs';
 
 const LOGIN = /^[a-z0-9]+(-[a-z0-9]+)*$/i;
 const RESERVED_NAME = /kepler|gitkraken/i;
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function parsedFamily(f) {
   return isRecord(f.family.value) ? f.family.value : null;
