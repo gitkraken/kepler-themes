@@ -4,9 +4,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { collectPreviews, copySiteFiles } from './build-index.mjs';
 import { changedSlugsOf, gitChangedFiles } from './check.mjs';
-import { loadGallery, loadVendor } from './lib/gallery.mjs';
+import { isRecord, loadGallery, loadVendor } from './lib/gallery.mjs';
 import { withChrome } from './lib/chrome.mjs';
-import { renderLandingPage, validPreview } from './lib/landing-page.mjs';
+import { renderLandingPage, themesOf } from './lib/landing-page.mjs';
 
 // Screenshots of the gallery page's own card for each changed theme, one variant at a time, for the
 // pull request comment.
@@ -16,20 +16,6 @@ import { renderLandingPage, validPreview } from './lib/landing-page.mjs';
 // this is safe to run on a pull request's checkout in CI.
 
 export const MAX_SHOTS = 24;
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/**
- * The families a change touched, as slugs, in the order of `present` (the gallery's own order).
- * Only `themes/<slug>/...` paths count, and a slug that is no longer in the gallery (the family
- * was removed) has nothing to draw.
- */
-export function changedSlugs(paths, present) {
-  const touched = changedSlugsOf(paths);
-  return present.filter((slug) => touched.has(slug));
-}
 
 /** The loaded families that can be drawn: their family file parsed to an object. */
 export function drawable(families) {
@@ -47,8 +33,9 @@ export function buildEntries(families) {
     const gallery = f.gallery.value;
     return {
       slug: f.slug,
-      name: family.name,
-      author: family.author,
+      // Any JSON can be here, and an object with a `toString` key throws when the page escapes it.
+      name: typeof family.name === 'string' ? family.name : f.slug,
+      author: typeof family.author === 'string' ? family.author : '',
       tags: isRecord(gallery) && Array.isArray(gallery.tags) ? gallery.tags : [],
       version: family.version,
       family,
@@ -68,27 +55,23 @@ function interleave(a, b) {
 
 /**
  * Which screenshots to take: one per theme that has a preview. `index` is the theme's place in its
- * family, as the page numbers its variant dots (themes without an id are not on the page at all).
+ * family, as the page numbers its variant dots.
  * Each family's shots go dark, light, dark, light, so the comment can lay them out in rows. Stops at `limit`.
  */
 export function planShots(families, previews, limit = MAX_SHOTS) {
   const shots = [];
   let truncated = false;
   for (const f of families) {
-    const themes = (Array.isArray(f.family.value.themes) ? f.family.value.themes : []).filter(
-      (t) => isRecord(t) && typeof t.id === 'string',
-    );
     const planned = [];
-    for (const [index, theme] of themes.entries()) {
-      const preview = validPreview(previews[f.slug]?.[theme.id]);
-      if (!preview) continue;
+    for (const [index, theme] of themesOf({ slug: f.slug, family: f.family.value }, previews).entries()) {
+      if (!theme.preview) continue;
       planned.push({
         slug: f.slug,
         family: typeof f.family.value.name === 'string' ? f.family.value.name : f.slug,
         index,
-        theme: typeof theme.name === 'string' ? theme.name : theme.id,
+        theme: theme.name,
         themeId: theme.id,
-        polarity: preview.polarity,
+        polarity: theme.preview.polarity,
       });
     }
     const ordered = interleave(planned.filter((s) => s.polarity === 'dark'), planned.filter((s) => s.polarity === 'light'));
@@ -119,6 +102,13 @@ export function buildManifest(shots, { truncated = false } = {}) {
     })),
     ...(truncated ? { truncated: true } : {}),
   };
+}
+
+/** The manifest of a run with nothing to draw, written to a folder resetOutDir has emptied. */
+function writeEmptyManifest(outDir) {
+  const manifest = buildManifest([]);
+  writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(manifest)}\n`);
+  return manifest;
 }
 
 const OUTPUT_FILE = /^(manifest\.json|[0-9]+\.png)$/;
@@ -188,9 +178,8 @@ export async function writePreviews({ families, outDir, toolingRoot, now = new D
   const { shots, truncated } = planShots(families, previews);
   resetOutDir(outDir);
   if (shots.length === 0) {
-    writeFileSync(join(outDir, 'manifest.json'), `${JSON.stringify(buildManifest([]))}\n`);
     log('No changed theme has a preview to draw.');
-    return buildManifest([]);
+    return writeEmptyManifest(outDir);
   }
   if (truncated) log(`Only the first ${MAX_SHOTS} screenshots are taken.`);
 
@@ -255,11 +244,11 @@ if (import.meta.main) {
     }
     const changed = gitChangedFiles(args.root, args.base);
     const { families } = loadGallery(args.root);
-    const slugs = changed ? changedSlugs(changed, families.map((f) => f.slug)) : [];
-    const picked = drawable(families.filter((f) => slugs.includes(f.slug)));
+    const touched = changedSlugsOf(changed);
+    const picked = drawable(families.filter((f) => touched?.has(f.slug)));
     if (picked.length === 0) {
       resetOutDir(args.out);
-      writeFileSync(join(args.out, 'manifest.json'), `${JSON.stringify(buildManifest([]))}\n`);
+      writeEmptyManifest(args.out);
       console.log(changed ? 'No theme changed, so there is nothing to preview.' : `The base ${args.base} is not in the checkout, so there is nothing to compare.`);
     } else {
       // Chrome is only needed, and only looked for, when a changed theme has something to draw.

@@ -4,13 +4,14 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { collectPreviews } from '../build-index.mjs';
+import { changedSlugsOf } from '../check.mjs';
 import { findChrome } from '../lib/chrome.mjs';
 import { loadGallery } from '../lib/gallery.mjs';
 import {
   MAX_SHOTS,
   buildEntries,
   buildManifest,
-  changedSlugs,
   drawable,
   parseArgs,
   planShots,
@@ -38,19 +39,34 @@ function themesOf(count) {
   return Array.from({ length: count }, (_, i) => ({ id: `t-${i}`, name: `T ${i}`, extends: 'dark' }));
 }
 
-test('changed slugs are the families whose files changed, in gallery order', () => {
-  const present = ['alpha', 'beta', 'gamma'];
+test('changed slugs are the families whose files changed', () => {
   assert.deepEqual(
-    changedSlugs(['themes/gamma/gamma.json', 'themes/alpha/gallery.json', 'themes/alpha/alpha.json'], present),
-    ['alpha', 'gamma'],
+    [...changedSlugsOf(['themes/gamma/gamma.json', 'themes/alpha/gallery.json', 'themes/alpha/alpha.json'])],
+    ['gamma', 'alpha'],
   );
 });
 
-test('changed slugs ignore other files, removed families and bare folder names', () => {
-  const present = ['alpha'];
-  assert.deepEqual(changedSlugs(['README.md', 'scripts/preview.mjs', '.github/workflows/check.yml', 'themes/alpha'], present), []);
-  assert.deepEqual(changedSlugs(['themes/gone/gone.json'], present), []);
-  assert.deepEqual(changedSlugs([], present), []);
+test('changed slugs ignore other files and bare folder names', () => {
+  assert.deepEqual([...changedSlugsOf(['README.md', 'scripts/preview.mjs', '.github/workflows/check.yml', 'themes/alpha'])], []);
+  assert.deepEqual([...changedSlugsOf([])], []);
+  assert.equal(changedSlugsOf(null), null);
+});
+
+test('a folder or theme named after an Object property stays in the previews and reaches nothing else', async () => {
+  const vendor = { checkThemeFamily: async () => ({ themes: [{ id: 'keys', preview: { a: 1 } }, { id: 'polluted', preview: { a: 1 } }] }) };
+  const families = ['constructor', '__proto__'].map((slug) => ({ slug, family: { text: '{}' } }));
+  const previews = await collectPreviews({ families, vendor });
+  assert.equal(typeof Object.keys, 'function');
+  assert.equal({}.polluted, undefined);
+  assert.deepEqual(previews.constructor.keys, { a: 1 });
+  assert.deepEqual(previews['__proto__'].polluted, { a: 1 });
+});
+
+test('a name or author that is not a string falls back instead of breaking the page', () => {
+  const family = { ...validFamily(), name: { toString: 1 }, author: { valueOf: 1, toString: 1 } };
+  const [entry] = buildEntries([{ slug: 'odd', family: { value: family }, gallery: {} }]);
+  assert.equal(entry.name, 'odd');
+  assert.equal(entry.author, '');
 });
 
 test('entries come straight from the files, with no tags when gallery.json is unusable', () => {

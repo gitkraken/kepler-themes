@@ -53,7 +53,7 @@ function chromeArgs(userDataDir) {
     // trusted tooling from escaped text and validated colors, never from contributor markup,
     // contributor text reaches the scripts run in it only as JSON values, and the job's token is
     // read-only. Everywhere else the sandbox stays on.
-    ...(process.env.CI ? ['--no-sandbox'] : []),
+    ...(process.env.GITHUB_ACTIONS === 'true' ? ['--no-sandbox'] : []),
     'about:blank',
   ];
 }

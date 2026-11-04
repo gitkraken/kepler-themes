@@ -53,7 +53,9 @@ jobs:
               ...context.repo, pull_number: number, per_page: 100,
             });
             const paths = files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean));
-            const touchesWorkflows = paths.some((p) => p.startsWith('.github/'));
+            // GitHub lists at most 3000 files, so a longer list could hide a .github/ change past its
+            // end. What cannot be seen counts as touching them.
+            const touchesWorkflows = files.length < pr.changed_files || paths.some((p) => p.startsWith('.github/'));
             let banner = '';
             if (touchesWorkflows) {
               banner = "> **This pull request changes the gallery's workflows, so its check ran code it supplies. Neither its status nor the report below can be trusted: review it as code.**\n\n";

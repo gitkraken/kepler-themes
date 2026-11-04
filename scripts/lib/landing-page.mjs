@@ -1,3 +1,5 @@
+import { isRecord } from './gallery.mjs';
+
 export const REPO_URL = 'https://github.com/gitkraken/kepler-themes';
 export const DOWNLOAD_URL = 'https://gitkraken.com/kepler/download';
 export const SITE_URL = 'https://kepler-themes.gitkraken.dev/';
@@ -31,10 +33,6 @@ export function serializeForScript(value) {
     /[<>&\u2028\u2029]/g,
     (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`,
   );
-}
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function pick(source, keys) {
@@ -88,21 +86,17 @@ export function validExtras(colors) {
   return out;
 }
 
-function themesOf(entry, previews) {
+/** A family's themes as the page lists them; a theme's place here is the `data-index` of its variant dot. */
+export function themesOf(entry, previews) {
   const themes = Array.isArray(entry.family?.themes) ? entry.family.themes : [];
   return themes
     .filter((t) => isRecord(t) && typeof t.id === 'string')
     .map((t) => ({
       id: t.id,
       name: typeof t.name === 'string' ? t.name : t.id,
-      base: t.extends === 'dark' || t.extends === 'light' ? t.extends : null,
       preview: validPreview(previews?.[entry.slug]?.[t.id]),
       extras: validExtras(t.colors),
     }));
-}
-
-function polarityOf(theme) {
-  return theme.preview?.polarity ?? theme.base;
 }
 
 /** True when the family has a painted dark theme and a painted light one, so its picture can sweep between them. */
@@ -161,7 +155,7 @@ export function renderLandingPage(index, previews = {}) {
       slug: entry.slug,
       name: typeof entry.name === 'string' ? entry.name : entry.slug,
       tags: Array.isArray(entry.tags) ? entry.tags.filter((t) => typeof t === 'string') : [],
-      themes: themes.map((t) => ({ id: t.id, name: t.name, polarity: polarityOf(t), preview: t.preview, extras: t.extras })),
+      themes: themes.map((t) => ({ id: t.id, name: t.name, preview: t.preview, extras: t.extras })),
     })),
     hero: heroThemes(ordered),
   };
