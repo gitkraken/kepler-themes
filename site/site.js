@@ -1,5 +1,5 @@
-// Paints the page from the data block the build writes: each family's Kepler window, planet
-// orb and spectrum, the catalog's search and filter, the hero's solar system, the star field and Kep.
+// Paints the page from the data block the build writes: each family's Kepler window and its
+// dark and light sweep, the catalog's search, the hero's solar system, the star field and Kep.
 (function () {
   'use strict';
 
@@ -39,127 +39,297 @@
     el.style.setProperty('--p-glow', rgba(brand, 0.65));
   }
 
-  function clearPlanet(el) {
-    ['--p-hi', '--p-mid', '--p-lo', '--p-glow'].forEach(function (name) { el.style.removeProperty(name); });
-  }
-
-  var WINDOW_VARS = {
-    canvas: 'canvas', sunken: 'sunken', raised: 'raised', ink: 'ink', text: 'text', muted: 'muted', edge: 'edge',
-    selected: 'selected', selectedInk: 'selected-ink', fill: 'fill', onFill: 'on-fill',
+  // The catalog's cards. Each family's picture is a recreation of Kepler's dashboard (the task
+  // list, one task open in the preview panel, its terminal below) painted from the theme's
+  // validated colors. A family with a dark and a light theme rests split on a diagonal and sweeps
+  // between them. All the text in the window is fixed; no family text goes into its markup.
+  var W = 760;
+  var H = 500;
+  var ICONS = {
+    plus: '<path d="M8 3v10M3 8h10"/>',
+    chev: '<path d="m4.5 6.5 3.5 3.5 3.5-3.5"/>',
+    kebab: '<circle cx="8" cy="3.5" r=".6"/><circle cx="8" cy="8" r=".6"/><circle cx="8" cy="12.5" r=".6"/>',
+    check: '<path d="m3.5 8.5 3 3 6-7"/>',
+    todo: '<rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="m5.5 8 2 2 3.5-4"/>',
+    rocket: '<path d="M9.5 2.5c2 0 4 0 4 0s0 2-1 4l-4 4-3-3 4-5ZM5.5 7.5l-2.5.5L2 10l3 .5M8.500 10.500 8 13l2 1 .5-3M4 12.500 2.500 14"/>',
+    graph: '<circle cx="8" cy="8" r="5.500"/><circle cx="8" cy="8" r="1.500"/><path d="M8 2.500v4M12.800 10.800 9.300 8.700"/>',
+    bolt: '<path d="M9 2 3.500 9.500H8L7 14l5.500-7.500H8L9 2Z"/>',
+    term: '<rect x="2" y="3" width="12" height="10" rx="2"/><path d="m4.500 6 2 2-2 2M8 10.500h3"/>',
+    spark: '<path d="M8 1.500v13M1.500 8h13M3.400 3.400l9.200 9.200M12.600 3.400l-9.200 9.200"/>',
+    gear: '<circle cx="8" cy="8" r="2"/><path d="M8 2v1.500M8 12.500V14M2 8h1.500M12.500 8H14M3.800 3.800l1 1M11.200 11.200l1 1M12.200 3.800l-1 1M4.800 11.200l-1 1"/>',
+    msg: '<path d="M2.500 3.500h11v7.500H7L4 13.500V11H2.500V3.500Z"/>',
+    ask: '<circle cx="8" cy="8" r="3.500"/><path d="M2 11.500c-1-1.500 2-3.500 5.500-5s7-2 7.500-.5"/>',
+    pr: '<circle cx="4" cy="3.500" r="1.500"/><circle cx="4" cy="12.500" r="1.500"/><circle cx="12" cy="12.500" r="1.500"/><path d="M4 5v6M12 11V6.500a2 2 0 0 0-2-2H8"/>',
   };
 
-  function code(s) {
-    var k = function (c, t) { return '<span style="color:' + s[c] + '">' + t + '</span>'; };
-    return [
-      k('control', 'import') + ' { ' + k('variable', 'watch') + ' } ' + k('control', 'from') + ' ' + k('string', "'./themes'") + ';',
-      k('comment', '// repaint when the file changes'),
-      k('keyword', 'export function') + ' ' + k('function', 'apply') + '(' + k('variable', 'id') + ': ' + k('type', 'ThemeId') + ') {',
-      '  ' + k('keyword', 'const') + ' ' + k('variable', 't') + ' = ' + k('function', 'resolve') + '(' + k('variable', 'id') + ', ' + k('number', '1') + ');',
-      '  ' + k('control', 'return') + ' ' + k('function', 'watch') + '(' + k('variable', 't') + ', ' + k('function', 'paint') + ');',
-      '}',
-    ].map(function (l, i) { return '<span class="ln">' + (i + 1) + '</span>' + l; }).join('\n');
+  function icon(n) { return '<svg class="i" aria-hidden="true"><use href="#kw-' + n + '"/></svg>'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // The build keeps a family-file token only when it is a plain hex or oklch() color, so any
+  // non-empty string here is one; a missing token counts as unset.
+  function isColor(v) { return typeof v === 'string' && v !== ''; }
+
+  // Everything the window paints from. The preview block is what the validator reports; the AI,
+  // diff and scrollbar colors are the family's own when it sets them, with a stated fallback when it doesn't.
+  // Only the ANSI colors the terminal and its prompt use are set (--a1 to --a6).
+  function vars(theme) {
+    var p = theme.preview, c = p.colors, a = p.terminal.ansi, s = p.syntax, t = theme.extras || {};
+    var out = {
+      canvas: c.canvas, raised: c.raised, ink: c.ink, text: c.text, muted: c.muted, edge: c.edge,
+      selected: c.selected, 'sel-ink': c.selectedInk, brand: c.brand, fill: c.fill, 'on-fill': c.onFill,
+      'term-bg': p.terminal.background, 'term-fg': p.terminal.foreground,
+      ai: isColor(t.ai) ? t.ai : s.keyword,
+      add: isColor(t['diff-added']) ? t['diff-added'] : rgba(a[2], 0.16),
+      rem: isColor(t['diff-removed']) ? t['diff-removed'] : rgba(a[1], 0.16),
+      'fill-s': rgba(c.ink, 0.07), 'fill-m': rgba(c.ink, 0.1),
+      ok: a[2], warn: a[3], info: a[4], merged: isColor(t.ai) ? t.ai : a[5],
+      thumb: isColor(t['scrollbar-thumb']) ? t['scrollbar-thumb'] : (isColor(t['edge-strong']) ? t['edge-strong'] : rgba(c.ink, 0.32)),
+    };
+    Object.keys(s).forEach(function (k) { out['s-' + k] = s[k]; });
+    for (var i = 1; i <= 6; i++) out['a' + i] = a[i];
+    return out;
+  }
+  function paint(el, theme) {
+    var v = vars(theme);
+    Object.keys(v).forEach(function (k) { el.style.setProperty('--' + k, v[k]); });
+    el.style.colorScheme = theme.preview.polarity;
+    return el;
   }
 
-  function paintWindow(win, preview) {
-    var c = preview.colors;
-    var a = preview.terminal.ansi;
-    Object.keys(WINDOW_VARS).forEach(function (key) { win.style.setProperty('--t-' + WINDOW_VARS[key], c[key]); });
-    win.style.setProperty('--t-term-bg', preview.terminal.background);
-    win.style.setProperty('--t-term-fg', preview.terminal.foreground);
-    var pill = function (color, text) { return '<span class="pill" style="color:' + color + '">' + text + '</span>'; };
-    var run = c.selectedInk;
-    var need = a[3];
-    var done = c.muted;
-    win.innerHTML = '<div class="ui">' +
-      '<div class="bar"><i></i><i></i><i></i><span>Kepler</span></div>' +
-      '<div class="nav"><div class="on">Dashboard</div><div>Tasks</div><div>Agents</div><div>Pull requests</div><div>Settings</div></div>' +
-      '<div class="main">' +
-        '<h4>Tasks in progress<span>New task</span></h4>' +
-        '<div class="rows">' +
-          '<div class="row"><b>Theme gallery landing page</b>' + pill(run, 'Running') + '</div>' +
-          '<div class="row"><b>Refresh OAuth tokens</b>' + pill(need, 'Needs you') + '</div>' +
-          '<div class="row"><b>Terminal ANSI colors</b>' + pill(run, 'Running') + '</div>' +
-          '<div class="row"><b>Show the search icon</b>' + pill(done, 'PR ready') + '</div>' +
-          '<div class="row"><b>Jira Server provider</b>' + pill(run, 'Running') + '</div>' +
-          '<div class="row"><b>Release installers</b>' + pill(done, 'Merged') + '</div>' +
-        '</div>' +
-        '<div class="pane"><div class="code">' + code(preview.syntax) + '</div>' +
-          '<div class="term"><span style="color:' + a[2] + '">~/kepler</span> <span style="color:' + a[5] + '">main</span> $ pnpm check<br><span style="color:' + a[2] + '">✓</span> All checks passed</div></div>' +
-      '</div></div>';
+  function sy(k, t) { return '<span style="color:var(--s-' + k + ')">' + esc(t) + '</span>'; }
+  function an(i, t) { return '<span style="color:var(--a' + i + ')">' + esc(t) + '</span>'; }
+
+  // The edit the open task shows: [line class, line number, sign, code].
+  var DIFF = [
+    ['', '13', ' ', sy('comment', '// T² ∝ a³, thanks Johannes')],
+    ['', '14', ' ', sy('comment', '// keep Kep inside the habitable zone')],
+    ['r', '15', '-', sy('keyword', 'export function') + ' ' + sy('function', 'plot') + '(' + sy('variable', 'target') + ': ' + sy('type', 'Star') + ') {'],
+    ['a', '15', '+', sy('keyword', 'export function') + ' ' + sy('function', 'plot') + '(' + sy('variable', 'target') + ': ' + sy('type', 'Star') + ', ' + sy('variable', 'fuel') + ' = ' + sy('number', '42') + ') {'],
+    ['r', '18', '-', '    ' + sy('function', 'overshoot') + '(' + sy('variable', 'target') + ');'],
+    ['a', '18', '+', '    ' + sy('function', 'coast') + '(' + sy('variable', 'target') + ');'],
+  ];
+  function diffHtml(lines) {
+    return '<div class="diff">' + lines.map(function (l) {
+      return '<div class="' + l[0] + '"><em>' + l[1] + '</em><u>' + l[2] + '</u><span>' + (l[3] || ' ') + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function tline(left, right) { return '<div class="tl"><span>' + left + '</span><span>' + (right || '') + '</span></div>'; }
+  function termPane() {
+    var prompt = an(6, '~/mission-control') + ' ' + an(5, 'feat/to-boldly-go') + ' $ pnpm launch';
+    var lines = [
+      tline(prompt),
+      tline(an(2, 'PASS') + ' orbit.test.ts', an(2, '12 checks')),
+      tline(an(3, 'WARN') + ' asteroids.test.ts', an(3, 'never tell me the odds')),
+      tline(an(1, 'FAIL') + ' landing' + an(4, ':48'), an(1, "Houston, we've had a problem")),
+      tline('Checks ' + an(1, '1 failed') + ', ' + an(2, '2,662 passed'), an(6, 'T+1.42s')),
+    ];
+    return '<div class="pane tpane"><div class="phead">' + icon('term') + 'Terminal</div><div class="tbody">' + lines.join('') + '</div></div>';
+  }
+  function topBar() {
+    return '<div class="top"><span class="tbtn soft">' + icon('plus') + 'New task</span><span class="sp"></span>' +
+      '<span class="tbtn">' + icon('ask') + 'Ask</span><span class="ico">' + icon('msg') + '</span><span class="ico">' + icon('gear') + '</span><span class="ava"></span></div>';
+  }
+  function strip(on) {
+    function t(n, i, l) { return '<span class="tab' + (on === n ? ' on' : '') + '">' + icon(i) + l + '</span>'; }
+    return '<div class="strip">' + t('todo', 'todo', 'Todo') + t('tasks', 'rocket', 'Tasks') + t('graph', 'graph', 'Agent Graph') + t('new', 'plus', 'New view') +
+      '<span class="sp"></span><span class="tab">' + icon('bolt') + 'Automations</span></div>';
+  }
+  function row(title, st, color, sel, pr) {
+    return '<div class="trow' + (sel ? ' sel' : '') + '"><b>' + esc(title) + '</b><span class="sp"></span>' +
+      (pr ? '<span class="chipn">' + icon('pr') + '#' + pr + '</span>' : '') +
+      '<span class="st" style="color:' + color + '">' + st + '</span></div>';
+  }
+  function taskList() {
+    var g = function (name, n) { return '<div class="ghead">' + icon('chev') + name + ' <span>' + n + '</span></div>'; };
+    return '<div class="list">' +
+      g('Needs you', 2) +
+      row('Open the pod bay doors', 'Waiting', 'var(--warn)') +
+      row('Build an Illudium Q-36 modulator', 'Waiting', 'var(--warn)') +
+      g('Running', 3) +
+      row('Plot a course to Kepler-186f', 'In development', 'var(--info)', true) +
+      row('Teach Kep to wave hello', 'In development', 'var(--info)') +
+      row('Calibrate the star tracker', 'In development', 'var(--info)') +
+      g('Not started', 2) +
+      row('Teach Keif to swim in zero-g', 'Exploration', 'var(--muted)') +
+      row('Pack snacks for Kep', 'Exploration', 'var(--muted)') +
+      g('Done', 2) +
+      row('Escape Earth\'s gravity', 'Done', 'var(--merged)', false, '1969') +
+      row('Soft-land the rover', 'Done', 'var(--merged)', false, '1977') +
+      '</div>';
+  }
+  function previewPanel() {
+    return '<div class="pane ppane">' +
+      '<div class="phead">' + icon('chev') + '<span class="ttl">Plot a course to Kepler-186f</span><span class="sp"></span><span class="acts">' + icon('term') + icon('kebab') + '</span></div>' +
+      '<div class="chat">' +
+        '<p>Kep kept overshooting, so <span class="ic">plot</span> now has a <span class="ic">fuel</span> budget.</p>' +
+        '<div class="tooldiff"><div class="tool"><span class="ok">' + icon('check') + '</span>Edit src/nav/course.ts<span class="sp"></span>' + icon('chev') + '</div>' + diffHtml(DIFF) + '</div>' +
+        '<div class="sb"></div></div>' +
+      '<div class="composer"><div class="row"><span>Type a message…</span><span class="sp"></span><span class="glyph-s">' + icon('spark') + '</span><span>Opus 5.5</span><span class="send">Send</span></div></div>' +
+      termPane() +
+      '</div>';
+  }
+  function cardView() {
+    return topBar() + strip('tasks') + '<div class="body">' + taskList() + previewPanel() + '</div>';
+  }
+  function makeWindow(theme) {
+    var el = document.createElement('div');
+    el.className = 'kw';
+    el.style.width = W + 'px';
+    el.style.height = H + 'px';
+    el.innerHTML = cardView();
+    return paint(el, theme);
   }
 
-  function spectrum(preview) {
-    var c = preview.colors;
-    var a = preview.terminal.ansi;
-    var s = preview.syntax;
-    return [c.canvas, c.selected, c.fill].concat(a.slice(1, 7), a.slice(9, 15), [s.keyword, s.function, s.string, s.type]);
+  // Fits the fixed-size window to its card's width. The box keeps the window's shape in CSS, so
+  // only the scale is set here: it changes no box's size, so the observer never re-triggers itself.
+  function fit(box, width) {
+    box.firstElementChild.style.transform = 'scale(' + width / W + ')';
+  }
+  var ro = typeof ResizeObserver === 'function' ? new ResizeObserver(function (entries) { entries.forEach(function (e) { fit(e.target, e.contentRect.width); }); }) : null;
+  function fitted(child) {
+    var box = document.createElement('div');
+    box.className = 'fit';
+    var scale = document.createElement('div');
+    scale.className = 'scale';
+    scale.style.width = W + 'px';
+    scale.style.height = H + 'px';
+    scale.appendChild(child);
+    box.appendChild(scale);
+    return box;
+  }
+  function painted(fam) { return fam.themes.filter(function (t) { return t.preview; }); }
+  // The family's middle dark and middle light theme, so a long family rests on its most typical pair.
+  function pairOf(fam) {
+    var dark = painted(fam).filter(function (t) { return t.preview.polarity === 'dark'; });
+    var light = painted(fam).filter(function (t) { return t.preview.polarity === 'light'; });
+    function mid(l) { return l[Math.floor((l.length - 1) / 2)]; }
+    return { dark: dark.length ? mid(dark) : null, light: light.length ? mid(light) : null };
+  }
+  function splitWindow(pair) {
+    var first = pair.dark || pair.light, second = pair.dark && pair.light;
+    var root = document.createElement('div');
+    root.className = 'split';
+    root.style.width = W + 'px';
+    root.style.height = H + 'px';
+    var a = document.createElement('div');
+    a.className = 'layer';
+    a.appendChild(makeWindow(first));
+    root.appendChild(a);
+    if (second) {
+      var b = document.createElement('div');
+      b.className = 'layer b';
+      b.appendChild(makeWindow(second));
+      root.appendChild(b);
+      root.insertAdjacentHTML('beforeend', '<svg class="seam" viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true"><line x1="' + W + '" y1="0" x2="0" y2="' + H + '" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/></svg>');
+    }
+    return root;
   }
 
-  // Each card's variant picker, by family slug, so the Dark and Light filter can flip a card to a matching theme.
-  var pickers = {};
+  function shortName(fam, t) {
+    var n = t.name.indexOf(fam.name + ' ') === 0 ? t.name.slice(fam.name.length + 1) : t.name;
+    return n === fam.name ? '' : n;
+  }
+  function updateCard(c) {
+    var fam = c.fam, only = !(c.dark && c.light);
+    if (c.root) c.root.dataset.mode = c.mode;
+    var text;
+    if (only) { text = (c.dark ? 'Dark' : 'Light') + ' only'; }
+    else if (c.mode === 'dark') { text = shortName(fam, c.dark) || 'Dark'; }
+    else if (c.mode === 'light') { text = shortName(fam, c.light) || 'Light'; }
+    else { text = (shortName(fam, c.dark) || 'Dark') + ' + ' + (shortName(fam, c.light) || 'Light'); }
+    c.vname.textContent = text;
+    c.dots.forEach(function (d) {
+      var on;
+      if (only) on = d.theme === (c.dark || c.light);
+      else if (d.theme.preview.polarity === 'dark') on = d.theme === c.dark && c.mode !== 'light';
+      else on = d.theme === c.light && c.mode !== 'dark';
+      d.el.setAttribute('aria-pressed', String(on));
+    });
+    if (c.sweep && !only) c.sweep.setAttribute('aria-label', fam.name + ', showing ' + text + '. Sweep to the next view.');
+    // A family of one polarity shows its middle theme first and any variant its dots pick.
+    if (c.img && only) c.img.setAttribute('aria-label', (c.dark || c.light).name + ' preview');
+  }
+
+  var cards = [];
+  var sweepAll = document.querySelector('.filters .seg');
+  function pressAll(mode) {
+    if (!sweepAll) return;
+    sweepAll.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mode === mode)); });
+  }
+  // Sweeps every family at once, one card after another down the catalog.
+  function setAll(mode) {
+    var shown = 0;
+    cards.forEach(function (c) {
+      if (c.root) c.root.style.setProperty('--delay', (c.entry.hidden ? 0 : shown++ * 55) + 'ms');
+      c.mode = mode;
+      // Only read at 50/50: leaving dark or light, the card's sweep picks the other side itself.
+      if (mode === 'split') c.dir = 'light';
+      updateCard(c);
+    });
+    pressAll(mode);
+  }
 
   document.querySelectorAll('.entry[data-family]').forEach(function (entry) {
-    var family = families[entry.dataset.family];
-    if (!family) return;
-    var view = entry.querySelector('.view');
-    var win = entry.querySelector('.win');
-    var orb = entry.querySelector('.orb');
-    var bar = entry.querySelector('.spectrum .bar');
-    var name = entry.querySelector('.spec-name');
-    var switcher = entry.querySelector('.seg');
-
-    function show(index) {
-      var theme = family.themes[index];
-      if (!theme) return;
-      name.textContent = theme.name;
-      if (!theme.preview) {
-        // Nothing to paint: a neutral orb and no window or spectrum for this theme.
-        clearPlanet(orb);
-        bar.innerHTML = '';
-        if (win) {
-          win.innerHTML = '';
-          win.hidden = true;
+    var fam = families[entry.dataset.family];
+    var frame = entry.querySelector('.sweep .frame');
+    var vname = entry.querySelector('.vname');
+    if (!fam || !frame || !vname || painted(fam).length === 0) return;
+    var pair = pairOf(fam), both = !!(pair.dark && pair.light);
+    var split = splitWindow(pair);
+    var box = fitted(split);
+    frame.appendChild(box);
+    // The observer's first report fits the box before it is painted, without a layout per card here.
+    if (ro) ro.observe(box); else fit(box, box.clientWidth);
+    var wins = split.querySelectorAll('.kw');
+    var c = { entry: entry, fam: fam, dark: pair.dark, light: pair.light, mode: 'split', dir: 'light', dots: [], vname: vname };
+    if (both) { c.root = split; c.sweep = entry.querySelector('button.sweep'); }
+    else c.img = entry.querySelector('.sweep[role="img"]');
+    entry.querySelectorAll('.swatches button[data-index]').forEach(function (b) {
+      var t = fam.themes[Number(b.dataset.index)];
+      if (!t || !t.preview) return;
+      c.dots.push({ el: b, theme: t });
+      b.addEventListener('click', function () {
+        // A dot paints its variant into the matching layer and sweeps to it. A family of one
+        // polarity has a single layer, which the dot repaints.
+        if (!both) {
+          if (t.preview.polarity === 'dark') c.dark = t; else c.light = t;
+          paint(wins[0], t);
+        } else if (t.preview.polarity === 'dark') {
+          c.dark = t; paint(wins[0], t); c.mode = 'dark';
+        } else {
+          c.light = t; paint(wins[1], t); c.mode = 'light';
         }
-        if (view) view.hidden = true;
-        return;
-      }
-      if (win) {
-        win.hidden = false;
-        if (view) view.hidden = false;
-        paintWindow(win, theme.preview);
-        win.setAttribute('aria-label', theme.name + ' preview');
-      }
-      setPlanet(orb, theme.preview);
-      var colors = spectrum(theme.preview);
-      bar.style.setProperty('--n', colors.length);
-      bar.innerHTML = colors.map(function (color) { return '<i style="background:' + color + '"></i>'; }).join('');
-    }
-
-    var current = 0;
-    function pick(index) {
-      current = index;
-      if (switcher) switcher.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(Number(b.dataset.index) === index)); });
-      show(index);
-    }
-    pickers[family.slug] = { pick: pick, current: function () { return current; } };
-
-    show(0);
-    if (!switcher) return;
-    switcher.addEventListener('click', function (e) {
-      var button = e.target.closest('button');
-      if (button) pick(Number(button.dataset.index));
+        if (c.root) c.root.style.setProperty('--delay', '0ms');
+        updateCard(c);
+        pressAll('');
+      });
     });
+    if (both && c.sweep) {
+      c.sweep.addEventListener('click', function () {
+        c.root.style.setProperty('--delay', '0ms');
+        // A sweep back and forth, so the picture always passes through 50/50.
+        if (c.mode === 'split') { c.mode = c.dir; }
+        else { c.dir = c.mode === 'dark' ? 'light' : 'dark'; c.mode = 'split'; }
+        updateCard(c);
+        pressAll('');
+      });
+    }
+    cards.push(c);
+    updateCard(c);
   });
 
-  // Search by family name, theme name or tag, and show only families with a dark or a light theme.
+  if (cards.length) {
+    document.body.insertAdjacentHTML('afterbegin', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>' +
+      Object.keys(ICONS).map(function (n) { return '<symbol id="kw-' + n + '" viewBox="0 0 16 16">' + ICONS[n] + '</symbol>'; }).join('') + '</defs></svg>');
+  }
+
+  // Search by family name, theme name or tag; the segmented control sweeps every family.
   var filters = document.querySelector('.filters');
   if (filters) {
     var find = document.getElementById('find');
     var none = document.querySelector('.none');
     var count = filters.querySelector('.count');
-    var polaritySeg = filters.querySelector('.seg');
     var entries = Array.prototype.slice.call(document.querySelectorAll('.entry[data-family]'));
-    var polarity = '';
 
     var haystack = function (family) {
       return [family.name].concat(family.tags || [], family.themes.map(function (t) { return t.name; })).join(' ').toLowerCase();
@@ -172,31 +342,26 @@
         var family = families[entry.dataset.family];
         if (!family) return;
         var text = haystack(family);
-        var match = terms.every(function (term) { return text.indexOf(term) !== -1; });
-        var first = polarity ? family.themes.map(function (t) { return t.polarity; }).indexOf(polarity) : 0;
-        entry.hidden = !match || first === -1;
-        if (entry.hidden) return;
-        shown++;
-        // Under Dark or Light, a card showing the other kind switches to its first matching theme.
-        var picker = pickers[family.slug];
-        if (polarity && picker && family.themes[picker.current()].polarity !== polarity) picker.pick(first);
+        entry.hidden = !terms.every(function (term) { return text.indexOf(term) !== -1; });
+        if (!entry.hidden) shown++;
       });
-      var filtering = terms.length > 0 || polarity !== '';
+      var filtering = terms.length > 0;
       count.textContent = filtering ? 'Showing ' + shown + ' of ' + entries.length + (entries.length === 1 ? ' family' : ' families') : '';
       none.hidden = !filtering || shown > 0;
     };
 
     find.addEventListener('input', apply);
-    polaritySeg.addEventListener('click', function (e) {
-      var button = e.target.closest('button');
-      if (!button) return;
-      polarity = button.dataset.polarity;
-      polaritySeg.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b === button)); });
-      apply();
-    });
+    if (sweepAll) {
+      sweepAll.addEventListener('click', function (e) {
+        var button = e.target.closest('button');
+        if (button) setAll(button.dataset.mode);
+      });
+      // With no family that has both a dark and a light theme, there is nothing to sweep.
+      sweepAll.hidden = !cards.some(function (c) { return c.root; });
+    }
     none.querySelector('button').addEventListener('click', function () {
       find.value = '';
-      polaritySeg.querySelector('button').click();
+      apply();
       find.focus();
     });
     filters.hidden = false;

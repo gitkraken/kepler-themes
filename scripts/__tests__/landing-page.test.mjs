@@ -5,7 +5,7 @@ import { dirname, join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { buildIndex, buildSite } from '../build-index.mjs';
-import { DOWNLOAD_URL, SITE_URL, renderLandingPage } from '../lib/landing-page.mjs';
+import { DOWNLOAD_URL, SITE_URL, renderLandingPage, validExtras } from '../lib/landing-page.mjs';
 import { makeGallery, validFamily } from './helpers.mjs';
 
 const NOW = new Date('2026-11-01T12:00:00Z');
@@ -95,7 +95,7 @@ test('hostile family text is escaped in the page and cannot close the data block
   assert.equal(data.families[0].themes[1].name, `A & "B" \u2028`);
 });
 
-test('a preview with a value that is not a hex color is dropped and the family renders without a window', async () => {
+test('a preview with a value that is not a hex color is dropped and the family renders without a frame', async () => {
   const bad = preview('dark');
   bad.syntax.keyword = 'red;background:url(//evil.example/x)';
   const root = makeGallery({
@@ -110,8 +110,9 @@ test('a preview with a value that is not a hex color is dropped and the family r
     html.slice(html.indexOf('data-family="bad"'), html.indexOf('data-family="good"')),
     html.slice(html.indexOf('data-family="good"')),
   ];
-  assert.ok(!badCard.includes('class="win"'));
-  assert.ok(goodCard.includes('class="win"'));
+  assert.ok(!badCard.includes('class="sweep"'));
+  assert.ok(!badCard.includes('class="swatches"'), 'no variant dot for a theme without a preview');
+  assert.ok(goodCard.includes('class="sweep"'));
   const data = JSON.parse(dataBlock(html));
   assert.equal(data.families.find((f) => f.slug === 'bad').themes[0].preview, null);
   assert.deepEqual(data.hero, [{ slug: 'good', id: 'good-dark' }], 'no planet for the dropped theme');
@@ -125,36 +126,37 @@ test('a short or malformed color list is also dropped', () => {
   const missing = preview('dark');
   delete missing.colors.brand;
   const page = renderLandingPage(index([entry('a', '2026-01-01')]), { a: { 'a-dark': short } });
-  assert.ok(!page.includes('class="win"'));
+  assert.ok(!page.includes('class="sweep"'));
   for (const odd of [shaped, missing]) {
-    assert.ok(!renderLandingPage(index([entry('a', '2026-01-01')]), { a: { 'a-dark': odd } }).includes('class="win"'));
+    assert.ok(!renderLandingPage(index([entry('a', '2026-01-01')]), { a: { 'a-dark': odd } }).includes('class="sweep"'));
   }
 });
 
 test('an empty gallery still renders the hero, the vacant card and the countdown', async () => {
   const { html } = await build(makeGallery({}));
   assert.ok(html.includes('id="system"'));
-  assert.ok(html.includes('No. 001 is waiting.'));
+  assert.ok(html.includes('Yours could be next.'));
   assert.ok(html.includes('T−3'));
   assert.ok(html.includes('<b>0</b> families, <b>0</b> themes'));
   assert.deepEqual(JSON.parse(dataBlock(html)), { families: [], hero: [] });
 });
 
-test('families are numbered by the day they were added, then by slug', () => {
+test('families are listed by the day they were added, then by slug, before the vacant card', () => {
   const page = renderLandingPage(
     index([entry('mango', '2026-03-01'), entry('zinc', '2026-01-05'), entry('apple', '2026-03-01'), entry('birch', '2026-02-01')]),
   );
-  const order = [...page.matchAll(/data-family="([a-z]+)"[\s\S]*?<span class="no">No\. (\d{3})<\/span>/g)].map((m) => `${m[2]} ${m[1]}`);
-  assert.deepEqual(order, ['001 zinc', '002 birch', '003 apple', '004 mango']);
-  assert.ok(page.includes('No. 005 is waiting.'));
+  const order = [...page.matchAll(/data-family="([a-z]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(order, ['zinc', 'birch', 'apple', 'mango']);
+  assert.ok(page.indexOf('data-family="mango"') < page.indexOf('Yours could be next.'));
+  assert.ok(!/No\. \d{3}/.test(page), 'families are not numbered');
 });
 
 test('a family with no previews, as with an older validator, still renders', async () => {
   const root = makeGallery({ example: {} });
   const { html } = await build(root);
   assert.ok(html.includes('data-family="example"'));
-  assert.ok(html.includes('No. 001'));
-  assert.ok(!html.includes('class="win"'));
+  assert.ok(!html.includes('class="sweep"'), 'no frame without a preview to paint');
+  assert.match(html, /<h3 id="t-example">Example<\/h3>/);
   assert.ok(html.includes('Catalog updated 2026-11-01'));
   assert.ok(!html.includes('checked with Kepler none'));
   const data = JSON.parse(dataBlock(html));
@@ -171,7 +173,7 @@ test('previews stay out of the index the Kepler app reads', async () => {
   assert.ok(!written.includes('"preview"'));
 });
 
-test('a dark and light pair is labelled Dark and Light, other families use theme names', async () => {
+test('a family with a painted dark and light theme sweeps; one with a single polarity does not', async () => {
   const pair = validFamily({
     name: 'Pair',
     themes: [
@@ -188,19 +190,63 @@ test('a dark and light pair is labelled Dark and Light, other families use theme
     ],
   });
   const root = makeGallery({ pair: { family: pair }, trio: { family: trio }, solo: {} });
-  withVendor(root, { 'pair-dark': preview('dark'), 'pair-light': preview('light'), 'trio-a': preview('dark') });
+  withVendor(root, {
+    'pair-dark': preview('dark', '#111111'),
+    'pair-light': preview('light', '#eeeeee'),
+    'trio-a': preview('dark'),
+    'trio-b': preview('dark'),
+    'example-dark': preview('dark'),
+  });
   const { html } = await build(root);
   const card = (slug) => {
     const start = html.indexOf(`data-family="${slug}"`);
     return html.slice(start, html.indexOf('</article>', start));
   };
-  assert.match(card('pair'), /<button type="button" aria-pressed="true" data-index="0">Dark<\/button>/);
-  assert.match(card('pair'), /<button type="button" aria-pressed="false" data-index="1">Light<\/button>/);
-  assert.match(card('pair'), /<dt>Themes<\/dt><dd>Dark, Light<\/dd>/);
-  assert.match(card('trio'), />Trio A<\/button>/);
-  assert.match(card('trio'), /<dt>Themes<\/dt><dd>3<\/dd>/);
-  assert.ok(!card('solo').includes('class="seg"'), 'one theme needs no switch');
-  assert.match(card('pair'), /role="img" aria-label="Pair Night preview"/);
+  assert.match(card('pair'), /<button type="button" class="sweep"/);
+  // Trio's light theme has no preview, so the family has only dark pictures to show.
+  assert.match(card('trio'), /<div class="sweep" role="img" aria-label="Trio A preview">/);
+  assert.ok(!card('trio').includes('<button type="button" class="sweep"'));
+  assert.match(card('solo'), /<div class="sweep"/);
+
+  // One dot per painted theme, named for it and colored from its preview, pointing at its place in the family.
+  const dots = (slug) => [...card(slug).matchAll(/<button type="button" data-index="(\d+)" aria-label="([^"]+)"[^>]*><i style="([^"]+)"><\/i><\/button>/g)].map((m) => [m[1], m[2], m[3]]);
+  assert.deepEqual(dots('pair'), [
+    ['0', 'Show Pair Night', 'background:linear-gradient(135deg,#111111 50%,#111111 50%)'],
+    ['1', 'Show Pair Day', 'background:linear-gradient(135deg,#eeeeee 50%,#eeeeee 50%)'],
+  ]);
+  assert.deepEqual(dots('trio').map((d) => d[0]), ['0', '1']);
+  for (const removed of ['class="seg" role="group" aria-label="Pair variant"', 'class="readout"', 'class="spectrum"', 'class="orb"', 'class="tags"', 'class="no"', 'An example.']) {
+    assert.ok(!html.includes(removed), `${removed} is not on the card`);
+  }
+});
+
+test('family color extras are kept only as a hex or plain oklch() color', () => {
+  const valid = {
+    ai: 'oklch(0.76 0.17 315)',
+    'diff-added': 'oklch(0.48 0.155 142 / 0.5)',
+    'diff-removed': '#ff836e0b',
+    'scrollbar-thumb': '#8A65B8',
+    'edge-strong': 'oklch(.5 1 20)',
+  };
+  assert.deepEqual(validExtras({ ...valid, 'surface-canvas': '#000000', brand: '#123456' }), valid, 'only the five tokens the window paints');
+  const hostile = {
+    ai: 'url(https://x)',
+    'diff-added': 'red;background:url(https://evil.example/x)',
+    'diff-removed': 'var(--x)',
+    'scrollbar-thumb': 'oklch(1 2 3) x',
+    'edge-strong': 0.45,
+  };
+  assert.deepEqual(validExtras(hostile), {});
+  for (const odd of ['#abc', '#1234567', 'oklch(1 2)', 'oklch(1 2 3 4)', 'oklch(1 2 3 / 4 5)', 'OKLCH(1 2 3)x', 'rgb(1 2 3)', 'red', ' #123456', '#123456\n', 'oklch(-1 2 3)']) {
+    assert.deepEqual(validExtras({ ai: odd }), {}, `${JSON.stringify(odd)} is dropped`);
+  }
+  for (const odd of [null, 'x', ['#123456'], 1]) assert.deepEqual(validExtras(odd), {});
+
+  const family = entry('a', '2026-01-01');
+  family.family.themes[0].colors = { ...hostile, ai: '#0dcfb2', 'diff-added': 'oklch(0.48 0.155 142 / 0.5)' };
+  const html = renderLandingPage(index([family]), { a: { 'a-dark': preview('dark') } });
+  assert.ok(!html.includes('url(') && !html.includes('evil.example') && !html.includes('var(--x)') && !html.includes('2 3) x'));
+  assert.deepEqual(JSON.parse(dataBlock(html)).families[0].themes[0].extras, { ai: '#0dcfb2', 'diff-added': 'oklch(0.48 0.155 142 / 0.5)' });
 });
 
 test('the hero shows at most six painted themes, featured families first', () => {
@@ -257,7 +303,7 @@ test('a visitor without Kepler is told what it is and where to download it', () 
   assert.ok(html.includes(`<meta property="og:url" content="${SITE_URL}">`));
 });
 
-test('the data block carries what the catalog search and filter need', () => {
+test('the data block carries what the catalog search and the cards need', () => {
   const families = [entry('a', '2026-01-01', { name: 'Aurora', tags: ['green', 'cool'] })];
   families[0].family.themes.push({ id: 'a-light', name: 'a Light', extends: 'light' });
   const html = renderLandingPage(index(families), { a: { 'a-dark': preview('dark') } });
@@ -265,5 +311,10 @@ test('the data block carries what the catalog search and filter need', () => {
   assert.equal(family.name, 'Aurora');
   assert.deepEqual(family.tags, ['green', 'cool']);
   assert.deepEqual(family.themes.map((t) => t.polarity), ['dark', 'light']);
-  assert.ok(html.includes('<div class="filters" role="search" aria-label="Themes" hidden>'), 'the controls wait for the script');
+  assert.deepEqual(Object.keys(family.themes[0]), ['id', 'name', 'polarity', 'preview', 'extras']);
+  assert.equal(family.themes[1].preview, null);
+  assert.deepEqual(family.themes[0].extras, {});
+  assert.ok(html.includes('<div class="filters" hidden>'), 'the controls wait for the script');
+  assert.ok(html.includes('<div class="find" role="search" aria-label="Themes">'));
+  assert.match(html, /<button type="button" aria-pressed="false" data-mode="dark">All dark<\/button>\s*<button type="button" aria-pressed="true" data-mode="split">50\/50<\/button>\s*<button type="button" aria-pressed="false" data-mode="light">All light<\/button>/);
 });

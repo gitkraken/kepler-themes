@@ -5,6 +5,10 @@ export const SITE_URL = 'https://kepler-themes.gitkraken.dev/';
 const DESCRIPTION = "Community themes for Kepler, GitKraken's agent-agnostic development environment. Browse themes made with Kepler, install them, or submit your own.";
 const HERO_THEMES = 6;
 const HEX = /^#[0-9a-f]{6}$/i;
+const EXTRA_KEYS = ['ai', 'diff-added', 'diff-removed', 'scrollbar-thumb', 'edge-strong'];
+const EXTRA_HEX = /^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/i;
+const NUM = String.raw`(?:\d+(?:\.\d+)?|\.\d+)`;
+const EXTRA_OKLCH = new RegExp(String.raw`^oklch\(\s*${NUM}\s+${NUM}\s+${NUM}\s*(?:\/\s*${NUM}\s*)?\)$`, 'i');
 const COLOR_KEYS = ['canvas', 'sunken', 'raised', 'ink', 'text', 'muted', 'edge', 'selected', 'selectedInk', 'brand', 'fill', 'onFill'];
 const SYNTAX_KEYS = ['text', 'keyword', 'control', 'function', 'type', 'string', 'number', 'variable', 'comment'];
 
@@ -59,13 +63,29 @@ export function validPreview(preview) {
   return { polarity: preview.polarity, colors, terminal: { ...terminal, ansi: [...ansi] }, syntax };
 }
 
-/** Catalog order, which is also each family's number: oldest first, then by slug. */
+/** Catalog order: oldest first, then by slug. */
 function catalogOrder(families) {
   const day = (f) => (typeof f.addedAt === 'string' ? f.addedAt : '');
   return [...families].sort((a, b) => {
     const byDay = day(a) < day(b) ? -1 : day(a) > day(b) ? 1 : 0;
     return byDay || (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0);
   });
+}
+
+/**
+ * The few family-file tokens the card's window paints with when a theme sets them, kept only
+ * when the value is a `#rrggbb`/`#rrggbbaa` hex or a plain `oklch(L C H)` / `oklch(L C H / A)`.
+ * These are contributor strings that end up in style properties, so anything else (another
+ * color syntax, `var()`, `url()`, a number) is left out and the page falls back to its own color.
+ */
+export function validExtras(colors) {
+  const out = {};
+  if (!isRecord(colors)) return out;
+  for (const key of EXTRA_KEYS) {
+    const value = colors[key];
+    if (typeof value === 'string' && (EXTRA_HEX.test(value) || EXTRA_OKLCH.test(value))) out[key] = value;
+  }
+  return out;
 }
 
 function themesOf(entry, previews) {
@@ -77,6 +97,7 @@ function themesOf(entry, previews) {
       name: typeof t.name === 'string' ? t.name : t.id,
       base: t.extends === 'dark' || t.extends === 'light' ? t.extends : null,
       preview: validPreview(previews?.[entry.slug]?.[t.id]),
+      extras: validExtras(t.colors),
     }));
 }
 
@@ -84,56 +105,35 @@ function polarityOf(theme) {
   return theme.preview?.polarity ?? theme.base;
 }
 
-/** A family with exactly one dark and one light theme reads better as Dark and Light than as two long names. */
-function isDarkLightPair(themes) {
-  return themes.length === 2 && themes.some((t) => polarityOf(t) === 'dark') && themes.some((t) => polarityOf(t) === 'light');
+/** True when the family has a painted dark theme and a painted light one, so its picture can sweep between them. */
+function sweeps(themes) {
+  return themes.some((t) => t.preview?.polarity === 'dark') && themes.some((t) => t.preview?.polarity === 'light');
 }
 
-function labelsOf(themes) {
-  return isDarkLightPair(themes) ? themes.map((t) => (polarityOf(t) === 'dark' ? 'Dark' : 'Light')) : themes.map((t) => t.name);
-}
-
-function entryHtml({ entry, themes }, number) {
+function entryHtml({ entry, themes }) {
   const slug = escapeHtml(entry.slug);
-  const labels = labelsOf(themes);
-  const first = themes[0];
-  const hidden = first?.preview ? '' : ' hidden';
-  const tags = Array.isArray(entry.tags) ? entry.tags.filter((t) => typeof t === 'string') : [];
-  // A family none of whose themes carries a preview has no window to paint.
-  const view = themes.some((t) => t.preview)
-    ? `            <div class="view"${hidden}><div class="win" role="img" aria-label="${escapeHtml(first?.name)} preview"${hidden}></div></div>\n`
-    : '';
-  const switcher =
-    themes.length > 1
-      ? `                <div class="seg" role="group" aria-label="${escapeHtml(entry.name)} variant">
-${themes
-  .map((_, i) => `                  <button type="button" aria-pressed="${i === 0}" data-index="${i}">${escapeHtml(labels[i])}</button>`)
-  .join('\n')}
-                </div>
-`
-      : '';
-  return `          <article class="entry" data-family="${slug}" aria-labelledby="t-${slug}">
-${view}            <div class="body">
-              <div class="title">
-                <span class="orb" aria-hidden="true"></span>
-                <div><h3 id="t-${slug}">${escapeHtml(entry.name)}</h3><p class="by">by ${escapeHtml(entry.author)}</p></div>
-                <span class="no">No. ${String(number).padStart(3, '0')}</span>
-              </div>
-              <p class="desc">${escapeHtml(entry.family?.description)}</p>
-              <dl class="readout">
-                <div><dt>Version</dt><dd>${escapeHtml(entry.version)}</dd></div>
-                <div><dt>License</dt><dd>${escapeHtml(entry.family?.license)}</dd></div>
-                <div><dt>Themes</dt><dd>${escapeHtml(isDarkLightPair(themes) ? labels.join(', ') : themes.length)}</dd></div>
-                <div><dt>Contrast</dt><dd class="pass">All pass</dd></div>
-              </dl>
-              <div class="spectrum">
-                <div class="bar" aria-hidden="true"></div>
-                <div class="cap"><span>Spectrum</span><span class="spec-name">${escapeHtml(first?.name)}</span></div>
-              </div>
-              <div class="foot">
-${switcher}                <div class="tags">${tags.map((t) => `<span>${escapeHtml(t)}</span>`).join('')}</div>
-              </div>
-            </div>
+  const painted = themes.map((t, index) => ({ t, index })).filter(({ t }) => t.preview);
+  // site.js fills the frame with the family's window. A family none of whose themes carries a
+  // preview has nothing to paint, so it gets no frame.
+  let frame = '';
+  if (painted.length > 0) {
+    frame = sweeps(themes)
+      ? `            <button type="button" class="sweep" aria-label="${escapeHtml(entry.name)}, dark and light"><span class="frame"></span></button>\n`
+      : `            <div class="sweep" role="img" aria-label="${escapeHtml(painted[0].t.name)} preview"><span class="frame"></span></div>\n`;
+  }
+  // Each dot is the theme's canvas and brand, both validated hex colors.
+  const dots = painted
+    .map(
+      ({ t, index }) =>
+        `<button type="button" data-index="${index}" aria-label="Show ${escapeHtml(t.name)}" title="${escapeHtml(t.name)}" aria-pressed="false"><i style="background:linear-gradient(135deg,${t.preview.colors.canvas} 50%,${t.preview.colors.brand} 50%)"></i></button>`,
+    )
+    .join('');
+  return `          <article class="entry gcard" data-family="${slug}" aria-labelledby="t-${slug}">
+${frame}            <div class="gmeta">
+              <h3 id="t-${slug}">${escapeHtml(entry.name)}</h3>
+              <span class="by">by ${escapeHtml(entry.author)}</span>
+${dots ? `              <span class="swatches">${dots}</span>\n` : ''}            </div>
+            <div class="vname"></div>
           </article>`;
 }
 
@@ -156,13 +156,12 @@ export function renderLandingPage(index, previews = {}) {
   const ordered = catalogOrder(index.families).map((entry) => ({ entry, themes: themesOf(entry, previews) }));
   const themeCount = ordered.reduce((sum, e) => sum + e.themes.length, 0);
   const checked = index.checkedWith && index.checkedWith !== 'none' ? index.checkedWith : null;
-  const next = String(ordered.length + 1).padStart(3, '0');
   const data = {
     families: ordered.map(({ entry, themes }) => ({
       slug: entry.slug,
       name: typeof entry.name === 'string' ? entry.name : entry.slug,
       tags: Array.isArray(entry.tags) ? entry.tags.filter((t) => typeof t === 'string') : [],
-      themes: themes.map((t) => ({ id: t.id, name: t.name, polarity: polarityOf(t), preview: t.preview })),
+      themes: themes.map((t) => ({ id: t.id, name: t.name, polarity: polarityOf(t), preview: t.preview, extras: t.extras })),
     })),
     hero: heroThemes(ordered),
   };
@@ -234,20 +233,22 @@ export function renderLandingPage(index, previews = {}) {
             </div>
             <p class="tally"><b>${ordered.length}</b> ${ordered.length === 1 ? 'family' : 'families'}, <b>${themeCount}</b> ${themeCount === 1 ? 'theme' : 'themes'}${checked ? `<br>checked with Kepler ${escapeHtml(checked)}` : ''}</p>
           </div>
-          <div class="filters" role="search" aria-label="Themes" hidden>
-            <input type="search" id="find" placeholder="Search by name or tag" aria-label="Search themes by name or tag" autocomplete="off" spellcheck="false">
-            <div class="seg" role="group" aria-label="Show">
-              <button type="button" aria-pressed="true" data-polarity="">All</button>
-              <button type="button" aria-pressed="false" data-polarity="dark">Dark</button>
-              <button type="button" aria-pressed="false" data-polarity="light">Light</button>
+          <div class="filters" hidden>
+            <div class="find" role="search" aria-label="Themes">
+              <input type="search" id="find" placeholder="Search by name or tag" aria-label="Search themes by name or tag" autocomplete="off" spellcheck="false">
+            </div>
+            <div class="seg" role="group" aria-label="Show every family">
+              <button type="button" aria-pressed="false" data-mode="dark">All dark</button>
+              <button type="button" aria-pressed="true" data-mode="split">50/50</button>
+              <button type="button" aria-pressed="false" data-mode="light">All light</button>
             </div>
             <p class="count" aria-live="polite"></p>
           </div>
           <p class="none" hidden>No themes match. <button type="button">Clear the search</button></p>
           <div class="catalog">
-${ordered.map((e, i) => `${entryHtml(e, i + 1)}\n\n`).join('')}          <article class="entry vacant" aria-labelledby="t-vacant">
+${ordered.map((e) => `${entryHtml(e)}\n\n`).join('')}          <article class="entry vacant" aria-labelledby="t-vacant">
             <div id="vacant-kep" data-state="listening"></div>
-            <h3 id="t-vacant">No. ${next} is waiting.</h3>
+            <h3 id="t-vacant">Yours could be next.</h3>
             <p>Made a theme you love? Add its folder and open a pull request, and it joins the catalog.</p>
             <code>themes/your-theme/</code>
             <a href="#launch">How submitting works</a>
