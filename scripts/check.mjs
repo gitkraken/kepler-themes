@@ -225,11 +225,15 @@ export const SCOPE_WARNING =
 export const SCOPE_MIXED =
   'Changes files outside its own folder under themes/ together with a theme: split the theme into its own pull request so each can be reviewed on its own.';
 
-function changedSlugsOf(changedFiles) {
+/** The families a change touches: only `themes/<slug>/...` paths count. Null when the change is unknown. */
+export function changedSlugsOf(changedFiles) {
   if (changedFiles === null) return null;
-  return new Set(
-    changedFiles.filter((p) => p.startsWith('themes/') && p.split('/').length >= 3).map((p) => p.split('/')[1]),
-  );
+  const slugs = new Set();
+  for (const path of changedFiles) {
+    const match = /^themes\/([^/]+)\/./.exec(path);
+    if (match) slugs.add(match[1]);
+  }
+  return slugs;
 }
 
 /** Informational only: the gate never fails on scope; the reviewer decides. */
@@ -411,11 +415,13 @@ export async function runChecks({
     if (vendor) {
       const { problems, previews } = await keplerCheck(vendor, f);
       checks.push({ name: 'Kepler validation', problems });
-      const themes = themesOf(f).map((t) => ({
-        name: typeof t.name === 'string' ? t.name : typeof t.id === 'string' ? t.id : '',
-        preview: previews.get(t.id) ?? null,
-      }));
-      if (changed && themes.length > 0) palettes.push({ slug: f.slug, themes });
+      if (changed) {
+        const themes = themesOf(f).map((t) => ({
+          name: typeof t.name === 'string' ? t.name : typeof t.id === 'string' ? t.id : '',
+          preview: previews.get(t.id) ?? null,
+        }));
+        if (themes.length > 0) palettes.push({ slug: f.slug, themes });
+      }
     }
     familyReports.push({ slug: f.slug, changed, checks });
   }
@@ -479,9 +485,11 @@ function scopeMarkdown(scope) {
   return lines;
 }
 
-// comment.yml cuts the report at 60,000 characters. Palette tables end within this budget, counted as
-// posted, so a cut never leaves a theme name's code span open.
-export const PALETTE_BUDGET = 50_000;
+// comment.yml cuts the report's tail, and the screenshots can leave as little as about 14,000
+// characters for the report: 24 one-image families whose 80-character names are all `|` or `~`,
+// which each escape to six characters. Palette tables are only added while the whole report stays
+// within this budget, counted as posted, so the palette can't push the check results past the cut.
+const PALETTE_BUDGET = 13_000;
 const PALETTE_NAME_LENGTH = 64;
 const code = (color) => `\`${color}\``;
 const PALETTE_ROWS = [
@@ -526,13 +534,15 @@ function nameCell(name) {
 
 function paletteTable({ slug, themes }) {
   const row = (cells) => `| ${cells.join(' | ')} |`;
+  // With no preview at all, as when the validator rejects the file, the color rows would all be empty.
+  const rows = themes.some((t) => t.preview) ? PALETTE_ROWS : PALETTE_ROWS.slice(0, 1);
   return [
     '',
     `**${markdown(mark(slug))}**`,
     '',
     row(['', ...themes.map((t) => nameCell(t.name))]),
     row(['---', ...themes.map(() => '---')]),
-    ...PALETTE_ROWS.map(([label, value], i) =>
+    ...rows.map(([label, value], i) =>
       row([label, ...themes.map((t) => (t.preview ? value(t.preview) : i === 0 ? 'No preview' : ''))]),
     ),
   ].join('\n');
@@ -543,26 +553,27 @@ function postedLength(text) {
   return text.length + (text.match(/@/g)?.length ?? 0);
 }
 
-/** The palette lines to append to `report`, as many tables as fit PALETTE_BUDGET. */
-function paletteMarkdown(palettes, report) {
+/** The palette lines to put before `checks`, as many tables as fit PALETTE_BUDGET. */
+function paletteMarkdown(palettes, checks) {
   if (palettes.length === 0) return [];
   const head = [
+    '### Palette',
     '',
-    '**Palette**',
+    '<details>',
+    "<summary>Colors of each changed family</summary>",
     '',
     "The colors Kepler's validator resolves for each theme's preview. A family can set more colors than these.",
   ];
   const section = (tables) => {
     const left = palettes.length - tables.length;
     const note = `${left} ${left === 1 ? 'family is' : 'families are'} not shown, to keep this comment under GitHub's size limit.`;
-    return [...head, ...tables, ...(left > 0 ? ['', note] : [])];
+    return [...head, ...tables, ...(left > 0 ? ['', note] : []), '', '</details>'];
   };
-  const fits = (lines) => postedLength(`${report}\n${lines.join('\n')}\n`) <= PALETTE_BUDGET;
+  const fits = (lines) => postedLength(`${lines.join('\n')}\n\n${checks}\n`) <= PALETTE_BUDGET;
   const tables = [];
   for (const palette of palettes) {
     const table = paletteTable(palette);
-    if (!fits(section([...tables, table]))) break;
-    tables.push(table);
+    if (fits(section([...tables, table]))) tables.push(table);
   }
   return section(tables);
 }
@@ -599,7 +610,7 @@ export function renderMarkdown(report) {
   const lines = [report.failed ? '### Theme checks: failed' : '### Theme checks: passed', ''];
   for (const note of report.notes) lines.push(`> ${markdown(note)}`, '');
   // One block per family would outgrow the posted comment as the gallery grows, so unchanged
-  // passing families get one line each.
+  // passing families get a single count line.
   const expanded = (r) => r.changed || r.checks.some((c) => c.problems.length > 0);
   for (const r of report.families.filter(expanded)) {
     lines.push(`**${markdown(mark(r.slug))}**`, '');
@@ -608,9 +619,7 @@ export function renderMarkdown(report) {
   }
   const others = report.families.filter((r) => !expanded(r));
   if (others.length > 0) {
-    lines.push('**Other families**', '');
-    for (const r of others) lines.push(`- ${markdown(mark(r.slug))}: pass`);
-    lines.push('');
+    lines.push(`${others.length} other ${others.length === 1 ? 'family' : 'families'}: pass`, '');
   }
   lines.push('**Gallery**', '');
   for (const c of report.global) lines.push(line(c));
@@ -621,8 +630,9 @@ export function renderMarkdown(report) {
     }
   }
   lines.push(...scopeMarkdown(report.scope));
-  lines.push(...paletteMarkdown(report.palettes, lines.join('\n')));
-  return `${lines.join('\n')}\n`;
+  const checks = lines.join('\n');
+  const palette = paletteMarkdown(report.palettes, checks);
+  return palette.length > 0 ? `${palette.join('\n')}\n\n${checks}\n` : `${checks}\n`;
 }
 
 function gitReadBase(root, base) {

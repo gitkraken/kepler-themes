@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { PALETTE_BUDGET, SCOPE_MIXED, SCOPE_WARNING, renderMarkdown, renderText, runChecks } from '../check.mjs';
+import { SCOPE_MIXED, SCOPE_WARNING, renderMarkdown, renderText, runChecks } from '../check.mjs';
 import { fixFormatting, formatJson, plain } from '../lib/gallery.mjs';
 import { COLOR_KEYS, SYNTAX_KEYS } from '../lib/landing-page.mjs';
 import { globalProblemsOf, makeGallery, previewOf, problemsOf, validFamily } from './helpers.mjs';
@@ -349,7 +349,7 @@ test('the markdown report puts untrusted strings in code spans', async () => {
   assert.ok(report.includes('**`ab`**'), report);
 });
 
-test('the markdown report lists each passing family the change leaves alone on one line', async () => {
+test('the markdown report counts the passing families the change leaves alone on one line', async () => {
   const family = (slug, name = 'Example') =>
     validFamily({ name, themes: [{ id: `${slug}-dark`, name: `${slug} dark`, extends: 'dark' }] });
   const root = makeGallery({
@@ -366,15 +366,17 @@ test('the markdown report lists each passing family the change leaves alone on o
 
   const known = renderMarkdown(await run(root, { changedFiles: ['themes/changed/changed.json'] }));
   const s = sections(known);
-  assert.deepEqual(Object.keys(s), ['`changed`', '`failing`', 'Other families', 'Gallery', 'Scope'], known);
+  assert.deepEqual(Object.keys(s), ['`changed`', '`failing`', 'Gallery', 'Scope'], known);
   assert.match(s['`changed`'], /^- Layout: pass$/m);
   assert.match(s['`failing`'], /^- Names: \*\*fail\*\*/m);
-  assert.equal(s['Other families'], '- `quiet`: pass');
+  assert.match(s['`failing`'], /^- Names: \*\*fail\*\*[^\n]*\n(?:- [^\n]*\n?)*\n1 other family: pass$/m, known);
+  assert.ok(!known.includes('Other families') && !known.includes('quiet'), known);
 
   const unknown = renderMarkdown(await run(root));
   const u = sections(unknown);
-  assert.deepEqual(Object.keys(u), ['`failing`', 'Other families', 'Gallery'], unknown);
-  assert.equal(u['Other families'], '- `changed`: pass\n- `quiet`: pass');
+  assert.deepEqual(Object.keys(u), ['`failing`', 'Gallery'], unknown);
+  assert.match(u['`failing`'], /\n\n2 other families: pass$/, unknown);
+  assert.ok(!unknown.includes('Other families') && !unknown.includes('quiet'), unknown);
   assert.equal(renderText(await run(root)).match(/pass {2}Layout/g).length, 3);
 });
 
@@ -534,8 +536,10 @@ function previewVendor(previewFor) {
 }
 
 function paletteOf(markdown) {
-  const at = markdown.indexOf('**Palette**');
-  return at < 0 ? null : markdown.slice(at);
+  const at = markdown.indexOf('### Palette');
+  if (at < 0) return null;
+  const end = markdown.indexOf('### Theme checks');
+  return markdown.slice(at, end < 0 ? undefined : end);
 }
 
 /** Table rows as GitHub shows them: only `\|` escapes, and it shows as `|`, even inside a code span. */
@@ -546,7 +550,7 @@ function tableRows(text) {
     .map((l) => [...l.slice(1).matchAll(/((?:\\\||[^|])*)\|/g)].map((m) => m[1].trim().replaceAll('\\|', '|')));
 }
 
-test('the markdown report ends with a palette of each family the change touches', async () => {
+test('the markdown report starts with a collapsed palette of each family the change touches', async () => {
   const vendor = await import('../../vendor/kepler-theme-check.mjs');
   const pair = validFamily({
     themes: [
@@ -560,7 +564,9 @@ test('the markdown report ends with a palette of each family the change touches'
 
   const palette = paletteOf(markdown);
   assert.ok(palette, markdown);
-  assert.ok(markdown.indexOf('**Palette**') > markdown.indexOf('**Scope**'));
+  assert.ok(markdown.startsWith('### Palette'), markdown);
+  assert.ok(markdown.indexOf('### Palette') < markdown.indexOf('### Theme checks'));
+  assert.ok(palette.includes('<details>') && palette.includes('</details>'), palette);
   assert.ok(palette.includes('**`example`**') && !palette.includes('`other`'), palette);
 
   const rows = tableRows(palette);
@@ -620,21 +626,23 @@ test('the palette shows no colors for a bad preview and keeps every theme name i
 });
 
 test('the palette stops before the report outgrows the comment it is posted in', async () => {
-  const slugs = Array.from({ length: 60 }, (_, i) => `family-${String(i).padStart(2, '0')}`);
+  const slugs = Array.from({ length: 30 }, (_, i) => `family-${String(i).padStart(2, '0')}`);
   const families = slugs.map((slug) => [
     slug,
     { family: validFamily({ themes: [1, 2, 3, 4].map((n) => ({ id: `${slug}-${n}`, name: `${slug} ${n}`, extends: 'dark' })) }) },
   ]);
   // comment.yml lengthens every `@`, and the name rule quotes this unchanged family's name in full.
-  const mentions = ['mentions', { family: validFamily({ name: `Kepler ${'@'.repeat(8000)}` }) }];
+  const mentions = ['mentions', { family: validFamily({ name: `Kepler ${'@'.repeat(2000)}` }) }];
   const vendor = previewVendor(() => previewOf());
   const changedFiles = slugs.map((s) => `themes/${s}/${s}.json`);
   const posted = (text) => text.length + (text.match(/@/g)?.length ?? 0);
+  // The least room comment.yml can leave for the report; see the note on the budget in check.mjs.
+  const leastRoom = 14_000;
   for (const gallery of [families, [...families, mentions]]) {
     const report = await run(makeGallery(Object.fromEntries(gallery)), { vendor, changedFiles });
     const markdown = renderMarkdown(report);
-    assert.ok(posted(markdown) <= PALETTE_BUDGET, String(posted(markdown)));
-    assert.ok(markdown.startsWith(renderMarkdown({ ...report, palettes: [] }).trimEnd()));
+    assert.ok(posted(markdown) <= leastRoom, String(posted(markdown)));
+    assert.ok(markdown.endsWith(renderMarkdown({ ...report, palettes: [] })));
     const shown = (paletteOf(markdown).match(/^\*\*`family-\d+`\*\*$/gm) ?? []).length;
     const left = Number(/\n\n(\d+) families are not shown/.exec(markdown)?.[1]);
     assert.ok(shown > 0 && left > 0, markdown.slice(-300));
@@ -653,4 +661,33 @@ test('the palette still says a family is not shown when no table fits', async ()
   assert.ok(palette, 'no palette section');
   assert.match(palette, /^1 family is not shown/m);
   assert.ok(!palette.includes('|'), palette);
+  assert.ok(palette.includes('</details>'), palette);
+});
+
+test('a family too wide to fit does not hide the smaller ones after it', async () => {
+  const themes = (slug, count) => Array.from({ length: count }, (_, i) => ({ id: `${slug}-${i}`, name: `${slug} ${i}`, extends: 'dark' }));
+  const root = makeGallery({
+    aaa: { family: validFamily({ themes: themes('aaa', 40) }) },
+    zzz: { family: validFamily({ themes: themes('zzz', 1) }) },
+  });
+  const vendor = previewVendor(() => previewOf());
+  const palette = paletteOf(
+    renderMarkdown(await run(root, { vendor, changedFiles: ['themes/aaa/aaa.json', 'themes/zzz/zzz.json'] })),
+  );
+  assert.ok(!palette.includes('`aaa`') && palette.includes('`zzz`'), palette);
+  assert.match(palette, /^1 family is not shown/m);
+});
+
+test('a family with no previews at all gets one row, not a table of empty cells', async () => {
+  const root = makeGallery({ example: {} });
+  const vendor = previewVendor(() => null);
+  const rows = tableRows(paletteOf(renderMarkdown(await run(root, { vendor, changedFiles: ['themes/example/example.json'] }))));
+  assert.equal(rows.length, 3, JSON.stringify(rows));
+  assert.deepEqual(rows[2].slice(0, 2), ['Base', 'No preview']);
+});
+
+test('with no palette the report starts with the check results', async () => {
+  const vendor = previewVendor(() => previewOf());
+  const markdown = renderMarkdown(await run(makeGallery({ example: {} }), { vendor, changedFiles: ['README.md'] }));
+  assert.ok(markdown.startsWith('### Theme checks'), markdown);
 });

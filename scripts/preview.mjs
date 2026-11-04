@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { collectPreviews, copySiteFiles } from './build-index.mjs';
-import { gitChangedFiles } from './check.mjs';
+import { changedSlugsOf, gitChangedFiles } from './check.mjs';
 import { loadGallery, loadVendor } from './lib/gallery.mjs';
 import { withChrome } from './lib/chrome.mjs';
 import { renderLandingPage, validPreview } from './lib/landing-page.mjs';
@@ -27,11 +27,7 @@ function isRecord(value) {
  * was removed) has nothing to draw.
  */
 export function changedSlugs(paths, present) {
-  const touched = new Set();
-  for (const path of paths) {
-    const match = /^themes\/([^/]+)\/./.exec(path);
-    if (match) touched.add(match[1]);
-  }
+  const touched = changedSlugsOf(paths);
   return present.filter((slug) => touched.has(slug));
 }
 

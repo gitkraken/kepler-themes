@@ -168,7 +168,7 @@ jobs:
 
             async function previewSection() {
               if (touchesWorkflows) {
-                return "\n\n### Preview\n\nPreviews were skipped because this pull request changes the gallery's workflows, so its screenshots would come from a run it controls.";
+                return "### Preview\n\nPreviews were skipped because this pull request changes the gallery's workflows, so its screenshots would come from a run it controls.\n\n";
               }
               try {
                 const read = readPreviews();
@@ -192,16 +192,20 @@ jobs:
                   return `**${name || 'Theme'}**\n\n<table>\n${rows.join('\n')}\n</table>`;
                 }).join('\n\n');
                 const more = read.truncated ? `\n\nOnly the first ${MAX_PREVIEWS} variants are shown.` : '';
-                return `\n\n### Preview\n\n${cards}${more}`;
+                return `### Preview\n\n${cards}${more}\n\n`;
               } catch (err) {
                 core.warning(`Could not publish the previews: ${err instanceof Error ? err.message : String(err)}`);
-                return '\n\n### Preview\n\nThe preview could not be published.';
+                return '### Preview\n\nThe preview could not be published.\n\n';
               }
             }
             // GitHub refuses a comment over 65536 characters, so the report gets the room the rest leaves.
             const preview = await previewSection();
             const room = Math.max(0, Math.min(60000, 65000 - marker.length - banner.length - preview.length));
-            const body = `${marker}\n${banner}${cut(report, room)}${preview}`;
+            // The order is banner, screenshots, report; only the report's tail can be cut, and the cut is
+            // the review notes and scope a reader would otherwise assume were clean, so it says so.
+            const CUT_NOTE = "\n\n**The rest of this report did not fit in this comment. The check run's summary has all of it.**";
+            const shown = Array.from(report).length <= room ? report : `${cut(report, Math.max(0, room - CUT_NOTE.length))}${CUT_NOTE}`;
+            const body = `${marker}\n${banner}${preview}${shown}`;
             const comments = await github.paginate(github.rest.issues.listComments, {
               owner, repo, issue_number: number, per_page: 100,
             });
