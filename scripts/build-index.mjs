@@ -7,6 +7,7 @@ import { renderLandingPage } from './lib/landing-page.mjs';
 import {
   formatProblems,
   indexLimitProblems,
+  isRecord,
   layoutProblems,
   loadGallery,
   loadLists,
@@ -14,10 +15,6 @@ import {
   mark,
   plain,
 } from './lib/gallery.mjs';
-
-function isRecord(value) {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function git(root, args) {
   try {
@@ -160,7 +157,9 @@ export function copySiteFiles(siteDir, outDir) {
  * page then lists those themes unpainted.
  */
 export async function collectPreviews({ families, vendor }) {
-  const previews = {};
+  // Keyed by folder names and theme ids, so neither level has a prototype that `constructor` or
+  // `__proto__` could reach: preview.mjs runs this on a pull request's unvalidated folders.
+  const previews = Object.create(null);
   if (typeof vendor?.checkThemeFamily !== 'function') return previews;
   for (const f of families) {
     if (typeof f.family.text !== 'string') continue;
@@ -173,7 +172,7 @@ export async function collectPreviews({ families, vendor }) {
     const themes = Array.isArray(result?.themes) ? result.themes : [];
     for (const theme of themes) {
       if (isRecord(theme) && typeof theme.id === 'string' && isRecord(theme.preview)) {
-        (previews[f.slug] ??= {})[theme.id] = theme.preview;
+        (previews[f.slug] ??= Object.create(null))[theme.id] = theme.preview;
       }
     }
   }

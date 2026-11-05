@@ -41,6 +41,10 @@ export const LICENSES = [
   'MPL-2.0',
 ];
 
+export function isRecord(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function formatJson(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
 }

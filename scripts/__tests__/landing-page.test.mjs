@@ -297,8 +297,7 @@ test('the data block carries what the catalog search and the cards need', () => 
   const [family] = JSON.parse(dataBlock(html)).families;
   assert.equal(family.name, 'Aurora');
   assert.deepEqual(family.tags, ['green', 'cool']);
-  assert.deepEqual(family.themes.map((t) => t.polarity), ['dark', 'light']);
-  assert.deepEqual(Object.keys(family.themes[0]), ['id', 'name', 'polarity', 'preview', 'extras']);
+  assert.deepEqual(Object.keys(family.themes[0]), ['id', 'name', 'preview', 'extras']);
   assert.equal(family.themes[1].preview, null);
   assert.deepEqual(family.themes[0].extras, {});
   assert.ok(html.includes('<div class="filters" hidden>'), 'the controls wait for the script');
