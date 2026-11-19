@@ -1,0 +1,175 @@
+{
+  "schemaVersion": 2,
+  "name": "Kill the Lights",
+  "version": "1.1.0",
+  "author": "Keith Daulton",
+  "description": "Violet-black rooms lit by blood-red keywords, orchid types, window-green functions, gold strings and puddle-teal numbers.",
+  "license": "MIT",
+  "themes": [
+    {
+      "id": "kill-the-lights",
+      "name": "Kill the Lights",
+      "extends": "dark",
+      "colors": {
+        "surface-sunken": "#09080f",
+        "surface-canvas": "#130f1c",
+        "surface-raised": "#1f1c2a",
+        "surface-overlay": "#282535",
+        "field": "#130f1c",
+        "ink": "#f6f5f7",
+        "brand": "#c7adff",
+        "brand-hover": "#d9c6fe",
+        "brand-active": "#b897f0",
+        "brand-fill": "#c85fd9",
+        "brand-fill-hover": "#d370e3",
+        "brand-fill-active": "#bb52cc",
+        "content-on-brand": "#09080f",
+        "ai": "#ffa3cf",
+        "ai-hover": "#feb4d7",
+        "selected-bg": 0.2,
+        "selected-ink": "#ffffff",
+        "status-success": "#88e48c",
+        "status-info": "#75c8fc",
+        "status-warning": "#ffa65f",
+        "status-attention": "#f7e785",
+        "status-danger": "#ff7076",
+        "status-merged": "#e98ff7",
+        "status-dormant": "#8c859c",
+        "usage-track": "#646076",
+        "usage-track-toned": "#09080f",
+        "diff-added": "#88e48c2b",
+        "diff-removed": "#ff70762b",
+        "code-selection": "#9163d5",
+        "code-find": "#f6de73",
+        "code-find-current": "#ffa475",
+        "code-highlight-ink": "#09080f",
+        "lane-1": "#c7adff",
+        "lane-2": "#82e687",
+        "lane-3": "#fe6077",
+        "lane-4": "#6fe2cd",
+        "lane-5": "#f6de73",
+        "lane-6": "#e98ff7",
+        "lane-7": "#ffa475",
+        "lane-8": "#75c8fc",
+        "channel-staging": "#ffa65f",
+        "channel-dev": "#88e48c",
+        "group-indigo": "#829eff",
+        "group-red": "#e94024",
+        "group-ink-indigo": "#09080f",
+        "group-ink-red": "#09080f"
+      },
+      "terminal": {
+        "background": "#09080f",
+        "foreground": "#f6f5f7",
+        "cursor": "#f6f5f7",
+        "selection": "#3a2e50",
+        "ansi": [
+          "#1f1c2a",
+          "#ff6170",
+          "#7bd77f",
+          "#f9d46b",
+          "#99b5fe",
+          "#e985ef",
+          "#70d9cc",
+          "#dfdde4",
+          "#aa94be",
+          "#fe9498",
+          "#a0eea2",
+          "#ffeab1",
+          "#b9cdfe",
+          "#f9aafd",
+          "#a0f0e5",
+          "#ffffff"
+        ]
+      },
+      "syntax": {
+        "tokens": {
+          "foreground": "#f6f5f7",
+          "comment": {
+            "color": "#aa94be",
+            "font_style": "italic"
+          },
+          "comment.doc": {
+            "color": "#aa94be",
+            "font_style": "italic"
+          },
+          "keyword": "#fe6077",
+          "keyword.operator": "#fe6077",
+          "keyword.jsdoc": "#fe6077",
+          "string": "#f6de73",
+          "string.escape": "#fe6077",
+          "string.regex": "#f6de73",
+          "string.special": "#fe6077",
+          "string.special.symbol": "#6fe2cd",
+          "number": "#6fe2cd",
+          "boolean": "#6fe2cd",
+          "constant": "#6fe2cd",
+          "enum": "#e98ff7",
+          "variant": "#6fe2cd",
+          "function": "#82e687",
+          "type": "#e98ff7",
+          "type.builtin": {
+            "color": "#e98ff7",
+            "font_style": "italic"
+          },
+          "type.jsdoc": {
+            "color": "#e98ff7",
+            "font_style": "italic"
+          },
+          "constructor": "#e98ff7",
+          "variable": "#f6f5f7",
+          "variable.parameter": {
+            "color": "#ffa475",
+            "font_style": "italic"
+          },
+          "variable.special": {
+            "color": "#c7adff",
+            "font_style": "italic"
+          },
+          "variable.jsdoc": {
+            "color": "#ffa475",
+            "font_style": "italic"
+          },
+          "property": "#f6f5f7",
+          "property.json_key": "#6fe2cd",
+          "tag": "#fe6077",
+          "tag.doctype": "#aa94be",
+          "attribute": {
+            "color": "#82e687",
+            "font_style": "italic"
+          },
+          "selector": "#fe6077",
+          "selector.pseudo": "#82e687",
+          "preproc": "#fe6077",
+          "embedded": "#f6f5f7",
+          "primary": "#f6f5f7",
+          "text.literal": "#82e687",
+          "label": "#6fe2cd",
+          "punctuation": "#f6f5f7",
+          "punctuation.bracket": "#f6f5f7",
+          "punctuation.special": "#fe6077",
+          "punctuation.list_marker": "#6fe2cd",
+          "punctuation.markup": "#c7adff",
+          "operator": "#fe6077",
+          "namespace": "#f6f5f7",
+          "link_uri": "#6fe2cd",
+          "link_text": "#fe6077",
+          "title": {
+            "color": "#c7adff",
+            "font_weight": 700
+          },
+          "emphasis": {
+            "color": "#f6de73",
+            "font_style": "italic"
+          },
+          "emphasis.strong": {
+            "color": "#ffa475",
+            "font_weight": 700
+          },
+          "diff.plus": "#88e48c",
+          "diff.minus": "#ff7076"
+        }
+      }
+    }
+  ]
+}
