@@ -2,7 +2,7 @@
   "$schema": "https://kepler.gitkraken.com/schemas/theme-family.json",
   "schemaVersion": 1,
   "name": "Kepler Sky",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "GitKraken",
   "description": "The quiet sky of Kep's onboarding: a teal-blue night and a soft daylight, with teal edges, tinted buttons and Kepler's teal accent.",
   "license": "MIT",
@@ -31,7 +31,9 @@
         "edge-decor": "oklch(0.66 0.099 178.8 / 0.48)",
         "selected-bg": 0.25,
         "selected-border": 0.64,
-        "selected-ink": "oklch(0.82 0.1 178.8)"
+        "selected-ink": "oklch(0.82 0.1 178.8)",
+        "group-text-indigo": "oklch(0.645 0.21 282)",
+        "group-text-red": "oklch(0.655 0.21 22)"
       }
     },
     {
